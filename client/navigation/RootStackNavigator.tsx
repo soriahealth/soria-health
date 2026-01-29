@@ -1,12 +1,15 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+
 import MainTabNavigator from "@/navigation/MainTabNavigator";
-import ModalScreen from "@/screens/ModalScreen";
+import AlertsScreen from "@/screens/AlertsScreen";
+import ChildrenRecordsScreen from "@/screens/ChildrenRecordsScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
 export type RootStackParamList = {
   Main: undefined;
-  Modal: undefined;
+  Alerts: undefined;
+  ChildrenRecords: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -22,11 +25,17 @@ export default function RootStackNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="Modal"
-        component={ModalScreen}
+        name="Alerts"
+        component={AlertsScreen}
         options={{
-          presentation: "modal",
-          headerTitle: "Modal",
+          headerTitle: "Health Alerts",
+        }}
+      />
+      <Stack.Screen
+        name="ChildrenRecords"
+        component={ChildrenRecordsScreen}
+        options={{
+          headerTitle: "Children's Records",
         }}
       />
     </Stack.Navigator>

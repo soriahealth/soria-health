@@ -16,6 +16,7 @@ interface ButtonProps {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
+  variant?: "primary" | "secondary" | "outline";
 }
 
 const springConfig: WithSpringConfig = {
@@ -33,6 +34,7 @@ export function Button({
   children,
   style,
   disabled = false,
+  variant = "primary",
 }: ButtonProps) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
@@ -53,6 +55,23 @@ export function Button({
     }
   };
 
+  const getBackgroundColor = () => {
+    if (variant === "outline") return "transparent";
+    if (variant === "secondary") return theme.backgroundSecondary;
+    return theme.link;
+  };
+
+  const getBorderColor = () => {
+    if (variant === "outline") return theme.border;
+    return "transparent";
+  };
+
+  const getTextColor = () => {
+    if (variant === "outline") return theme.link;
+    if (variant === "secondary") return theme.text;
+    return theme.buttonText;
+  };
+
   return (
     <AnimatedPressable
       onPress={disabled ? undefined : onPress}
@@ -62,7 +81,9 @@ export function Button({
       style={[
         styles.button,
         {
-          backgroundColor: theme.link,
+          backgroundColor: getBackgroundColor(),
+          borderColor: getBorderColor(),
+          borderWidth: variant === "outline" ? 1 : 0,
           opacity: disabled ? 0.5 : 1,
         },
         style,
@@ -71,7 +92,7 @@ export function Button({
     >
       <ThemedText
         type="body"
-        style={[styles.buttonText, { color: theme.buttonText }]}
+        style={[styles.buttonText, { color: getTextColor() }]}
       >
         {children}
       </ThemedText>
@@ -82,7 +103,7 @@ export function Button({
 const styles = StyleSheet.create({
   button: {
     height: Spacing.buttonHeight,
-    borderRadius: BorderRadius.full,
+    borderRadius: BorderRadius.sm,
     alignItems: "center",
     justifyContent: "center",
   },
