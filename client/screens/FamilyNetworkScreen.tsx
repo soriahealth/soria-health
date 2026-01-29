@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { StyleSheet, View, ScrollView, TextInput, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
@@ -10,14 +8,14 @@ import { ThemedText } from "@/components/ThemedText";
 import { FamilyMemberCard } from "@/components/FamilyMemberCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
+import { useDrawer } from "@/context/DrawerContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { familyMembers } from "@/data/mockData";
 
 export default function FamilyNetworkScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
-  const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
+  const { openDrawer } = useDrawer();
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredMembers = familyMembers.filter((member) =>
@@ -28,13 +26,31 @@ export default function FamilyNetworkScreen() {
     <ScrollView
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
       contentContainerStyle={{
-        paddingTop: headerHeight + Spacing.xl,
-        paddingBottom: tabBarHeight + Spacing.xl,
+        paddingTop: insets.top + Spacing.xl,
+        paddingBottom: insets.bottom + Spacing.xl,
         paddingHorizontal: Spacing.lg,
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}
       showsVerticalScrollIndicator={false}
     >
+      <View style={styles.headerRow}>
+        <Pressable
+          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            openDrawer();
+          }}
+        >
+          <Feather name="menu" size={22} color={theme.text} />
+        </Pressable>
+        <Pressable
+          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault }]}
+          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+        >
+          <Feather name="sun" size={20} color={theme.text} />
+        </Pressable>
+      </View>
+
       <ThemedText type="h2" style={styles.title}>
         Family Health Network
       </ThemedText>
@@ -95,6 +111,19 @@ export default function FamilyNetworkScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.xl,
+  },
+  menuButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     marginBottom: Spacing.xs,

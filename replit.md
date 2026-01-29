@@ -9,8 +9,10 @@ The app is in MVP state with the following features implemented:
 - Family Network for viewing connected family members
 - Family Medical History with hereditary conditions tracking
 - Children's Health Records management
-- Health Alerts with personalized recommendations
+- Health Alerts with personalized recommendations (dedicated screen)
+- Wellness Center with workout plans
 - User Profile with settings
+- **Sidebar Navigation** - Custom drawer-style navigation accessible from hamburger menu on each screen
 
 ## Project Architecture
 
@@ -29,16 +31,19 @@ The app is in MVP state with the following features implemented:
     - `TabFilter.tsx` - Horizontal tab filters
     - `EmptyState.tsx` - Empty state illustrations
     - `FormField.tsx` - Form input fields
+    - `SidebarModal.tsx` - Sidebar/drawer navigation modal
   - `/screens` - App screens
     - `DashboardScreen.tsx` - Main health dashboard
     - `FamilyNetworkScreen.tsx` - Family member list
     - `FamilyHistoryScreen.tsx` - Medical history tracking
     - `ChildrenRecordsScreen.tsx` - Children's health records
-    - `AlertsScreen.tsx` - Health alerts list
+    - `AlertsScreen.tsx` - Health alerts list (dedicated screen)
+    - `WellnessScreen.tsx` - Workout plans and wellness content
     - `ProfileScreen.tsx` - User settings
   - `/navigation` - Navigation structure
-    - `RootStackNavigator.tsx` - Main stack navigator
-    - `MainTabNavigator.tsx` - Bottom tab navigator
+    - `RootStackNavigator.tsx` - Main stack navigator with sidebar modal
+  - `/context` - React contexts
+    - `DrawerContext.tsx` - Sidebar/drawer state management
   - `/types` - TypeScript type definitions
     - `health.ts` - Health-related types
   - `/data` - Mock data for development

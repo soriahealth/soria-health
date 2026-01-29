@@ -1,15 +1,24 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-import MainTabNavigator from "@/navigation/MainTabNavigator";
-import AlertsScreen from "@/screens/AlertsScreen";
-import ChildrenRecordsScreen from "@/screens/ChildrenRecordsScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
+import DashboardScreen from "@/screens/DashboardScreen";
+import FamilyNetworkScreen from "@/screens/FamilyNetworkScreen";
+import FamilyHistoryScreen from "@/screens/FamilyHistoryScreen";
+import ChildrenRecordsScreen from "@/screens/ChildrenRecordsScreen";
+import AlertsScreen from "@/screens/AlertsScreen";
+import WellnessScreen from "@/screens/WellnessScreen";
+import ProfileScreen from "@/screens/ProfileScreen";
+import { SidebarModal } from "@/components/SidebarModal";
 
 export type RootStackParamList = {
-  Main: undefined;
-  Alerts: undefined;
+  Dashboard: undefined;
+  Family: undefined;
+  FamilyHistory: undefined;
   ChildrenRecords: undefined;
+  Wellness: undefined;
+  HealthAlerts: undefined;
+  Profile: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -18,26 +27,22 @@ export default function RootStackNavigator() {
   const screenOptions = useScreenOptions();
 
   return (
-    <Stack.Navigator screenOptions={screenOptions}>
-      <Stack.Screen
-        name="Main"
-        component={MainTabNavigator}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Alerts"
-        component={AlertsScreen}
-        options={{
-          headerTitle: "Health Alerts",
+    <>
+      <Stack.Navigator
+        screenOptions={{
+          ...screenOptions,
+          headerShown: false,
         }}
-      />
-      <Stack.Screen
-        name="ChildrenRecords"
-        component={ChildrenRecordsScreen}
-        options={{
-          headerTitle: "Children's Records",
-        }}
-      />
-    </Stack.Navigator>
+      >
+        <Stack.Screen name="Dashboard" component={DashboardScreen} />
+        <Stack.Screen name="Family" component={FamilyNetworkScreen} />
+        <Stack.Screen name="FamilyHistory" component={FamilyHistoryScreen} />
+        <Stack.Screen name="ChildrenRecords" component={ChildrenRecordsScreen} />
+        <Stack.Screen name="Wellness" component={WellnessScreen} />
+        <Stack.Screen name="HealthAlerts" component={AlertsScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+      </Stack.Navigator>
+      <SidebarModal />
+    </>
   );
 }

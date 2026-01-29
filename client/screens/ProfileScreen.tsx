@@ -1,14 +1,13 @@
 import React from "react";
-import { StyleSheet, View, Pressable, Image } from "react-native";
+import { StyleSheet, View, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
+import { useDrawer } from "@/context/DrawerContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
 
 interface SettingsItemProps {
@@ -51,20 +50,37 @@ function SettingsItem({ icon, label, onPress, danger }: SettingsItemProps) {
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
-  const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
+  const { openDrawer } = useDrawer();
 
   return (
     <KeyboardAwareScrollViewCompat
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
       contentContainerStyle={{
-        paddingTop: headerHeight + Spacing.xl,
-        paddingBottom: tabBarHeight + Spacing.xl,
+        paddingTop: insets.top + Spacing.xl,
+        paddingBottom: insets.bottom + Spacing.xl,
         paddingHorizontal: Spacing.lg,
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}
     >
+      <View style={styles.headerRow}>
+        <Pressable
+          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            openDrawer();
+          }}
+        >
+          <Feather name="menu" size={22} color={theme.text} />
+        </Pressable>
+        <Pressable
+          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault }]}
+          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+        >
+          <Feather name="sun" size={20} color={theme.text} />
+        </Pressable>
+      </View>
+
       <View
         style={[
           styles.profileCard,
@@ -205,6 +221,19 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.xl,
+  },
+  menuButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   profileCard: {
     flexDirection: "row",

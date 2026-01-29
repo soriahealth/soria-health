@@ -1,9 +1,8 @@
 import React from "react";
-import { StyleSheet, View, ScrollView } from "react-native";
+import { StyleSheet, View, ScrollView, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { InfoCard } from "@/components/InfoCard";
@@ -12,12 +11,9 @@ import { ConditionTag } from "@/components/ConditionTag";
 import { GrandparentCard } from "@/components/GrandparentCard";
 import { PreventiveCareCard } from "@/components/PreventiveCareCard";
 import { useTheme } from "@/hooks/useTheme";
+import { useDrawer } from "@/context/DrawerContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
-import {
-  familyConditions,
-  grandparents,
-  preventiveCareTimeline,
-} from "@/data/mockData";
+import { grandparents, preventiveCareTimeline } from "@/data/mockData";
 
 const conditionsWithCounts = [
   { name: "Alzheimer's Disease", count: 1 },
@@ -35,21 +31,38 @@ const conditionsWithCounts = [
 
 export default function FamilyHistoryScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
-  const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
+  const { openDrawer } = useDrawer();
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
       contentContainerStyle={{
-        paddingTop: headerHeight + Spacing.xl,
-        paddingBottom: tabBarHeight + Spacing.xl,
+        paddingTop: insets.top + Spacing.xl,
+        paddingBottom: insets.bottom + Spacing.xl,
         paddingHorizontal: Spacing.lg,
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}
       showsVerticalScrollIndicator={false}
     >
+      <View style={styles.headerRow}>
+        <Pressable
+          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            openDrawer();
+          }}
+        >
+          <Feather name="menu" size={22} color={theme.text} />
+        </Pressable>
+        <Pressable
+          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault }]}
+          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+        >
+          <Feather name="sun" size={20} color={theme.text} />
+        </Pressable>
+      </View>
+
       <ThemedText type="h2" style={styles.title}>
         Family Medical History
       </ThemedText>
@@ -127,6 +140,19 @@ export default function FamilyHistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.xl,
+  },
+  menuButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     marginBottom: Spacing.xs,

@@ -1,22 +1,22 @@
 import React, { useState } from "react";
-import { StyleSheet, ScrollView } from "react-native";
+import { StyleSheet, ScrollView, View, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { AlertCard } from "@/components/AlertCard";
 import { TabFilter } from "@/components/TabFilter";
 import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
+import { useDrawer } from "@/context/DrawerContext";
 import { Spacing } from "@/constants/theme";
 import { healthAlerts } from "@/data/mockData";
 
 export default function AlertsScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
-  const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
+  const { openDrawer } = useDrawer();
   const [activeTab, setActiveTab] = useState("all");
 
   const tabs = [
@@ -47,12 +47,24 @@ export default function AlertsScreen() {
     <ScrollView
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
       contentContainerStyle={{
-        paddingTop: headerHeight + Spacing.xl,
-        paddingBottom: tabBarHeight + Spacing.xl,
+        paddingTop: insets.top + Spacing.xl,
+        paddingBottom: insets.bottom + Spacing.xl,
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}
       showsVerticalScrollIndicator={false}
     >
+      <View style={styles.headerRow}>
+        <Pressable
+          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            openDrawer();
+          }}
+        >
+          <Feather name="menu" size={22} color={theme.text} />
+        </Pressable>
+      </View>
+
       <ThemedText type="h2" style={styles.title}>
         Health Alerts
       </ThemedText>
@@ -62,10 +74,7 @@ export default function AlertsScreen() {
 
       <TabFilter tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <ScrollView
-        contentContainerStyle={styles.alertsContainer}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.alertsContainer}>
         {filteredAlerts.length > 0 ? (
           filteredAlerts.map((alert) => (
             <AlertCard key={alert.id} alert={alert} />
@@ -77,7 +86,7 @@ export default function AlertsScreen() {
             message="You're all caught up! No health alerts at this time."
           />
         )}
-      </ScrollView>
+      </View>
     </ScrollView>
   );
 }
@@ -85,6 +94,20 @@ export default function AlertsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.xl,
+  },
+  menuButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     marginBottom: Spacing.xs,
