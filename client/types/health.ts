@@ -35,6 +35,10 @@ export interface FamilyMember {
   conditions: MedicalCondition[];
   recordsShared: number;
   avatarColor: string;
+  isDeceased?: boolean;
+  yearOfBirth?: number;
+  yearOfDeath?: number;
+  causeOfDeath?: string;
 }
 
 export interface Child {

@@ -6,11 +6,12 @@ import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { FamilyMemberCard } from "@/components/FamilyMemberCard";
+import { DeceasedMemberCard } from "@/components/DeceasedMemberCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
 import { useDrawer } from "@/context/DrawerContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { familyMembers } from "@/data/mockData";
+import { familyMembers, deceasedFamilyMembers } from "@/data/mockData";
 
 export default function FamilyNetworkScreen() {
   const insets = useSafeAreaInsets();
@@ -87,6 +88,10 @@ export default function FamilyNetworkScreen() {
         </ThemedText>
       </Pressable>
 
+      <ThemedText style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+        Living Family Members
+      </ThemedText>
+
       {filteredMembers.length > 0 ? (
         <View style={styles.membersList}>
           {filteredMembers.map((member) => (
@@ -104,6 +109,22 @@ export default function FamilyNetworkScreen() {
           }
         />
       )}
+
+      <View style={[styles.deceasedSection, { borderTopColor: theme.border }]}>
+        <View style={styles.deceasedHeader}>
+          <Feather name="archive" size={18} color={theme.textSecondary} />
+          <ThemedText style={[styles.sectionLabel, { color: theme.textSecondary, marginBottom: 0 }]}>
+            Post-Mortem Records
+          </ThemedText>
+        </View>
+        <ThemedText style={[styles.deceasedSubtitle, { color: theme.textTertiary }]}>
+          Medical history of deceased relatives for hereditary tracking
+        </ThemedText>
+
+        {deceasedFamilyMembers.map((member) => (
+          <DeceasedMemberCard key={member.id} member={member} />
+        ))}
+      </View>
     </ScrollView>
   );
 }
@@ -163,5 +184,27 @@ const styles = StyleSheet.create({
   },
   membersList: {
     marginTop: Spacing.sm,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: Spacing.md,
+  },
+  deceasedSection: {
+    marginTop: Spacing.xl,
+    paddingTop: Spacing.xl,
+    borderTopWidth: 1,
+  },
+  deceasedHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  deceasedSubtitle: {
+    fontSize: 13,
+    marginBottom: Spacing.lg,
   },
 });
