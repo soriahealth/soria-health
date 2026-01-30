@@ -10,6 +10,8 @@ type DrawerParamList = {
   HealthAlerts: undefined;
   Profile: undefined;
   ConnectedDevices: undefined;
+  NewPatientForm: undefined;
+  DoctorPortal: undefined;
 };
 
 type DrawerContextType = {
