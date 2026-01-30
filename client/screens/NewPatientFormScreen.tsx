@@ -148,8 +148,8 @@ export default function NewPatientFormScreen() {
             <Checkbox
               value={selectedOptions[option.id]}
               onValueChange={() => toggleOption(option.id)}
-              color={selectedOptions[option.id] ? theme.primary : undefined}
-              style={styles.checkbox}
+              color={selectedOptions[option.id] ? "#3B82F6" : "#D1D5DB"}
+              style={[styles.checkbox, { borderColor: selectedOptions[option.id] ? "#3B82F6" : "#D1D5DB" }]}
             />
             <ThemedText style={styles.checkboxLabel}>{option.label}</ThemedText>
           </Pressable>
@@ -301,8 +301,8 @@ export default function NewPatientFormScreen() {
                     <Checkbox
                       value={selectedSymptoms[symptom] || false}
                       onValueChange={() => toggleSymptom(symptom)}
-                      color={selectedSymptoms[symptom] ? theme.primary : undefined}
-                      style={styles.symptomCheckbox}
+                      color={selectedSymptoms[symptom] ? "#3B82F6" : "#D1D5DB"}
+                      style={[styles.symptomCheckbox, { borderColor: selectedSymptoms[symptom] ? "#3B82F6" : "#D1D5DB" }]}
                     />
                     <ThemedText style={styles.symptomLabel}>{symptom}</ThemedText>
                   </Pressable>
@@ -389,9 +389,10 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
   },
   checkbox: {
-    width: 20,
-    height: 20,
+    width: 22,
+    height: 22,
     borderRadius: 4,
+    borderWidth: 2,
     marginRight: Spacing.md,
   },
   checkboxLabel: {
@@ -490,9 +491,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   symptomCheckbox: {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
     borderRadius: 4,
+    borderWidth: 2,
     marginRight: Spacing.md,
   },
   symptomLabel: {
