@@ -9,6 +9,7 @@ type DrawerParamList = {
   Wellness: undefined;
   HealthAlerts: undefined;
   Profile: undefined;
+  ConnectedDevices: undefined;
 };
 
 type DrawerContextType = {

@@ -19,7 +19,7 @@ import { Spacing, BorderRadius } from "@/constants/theme";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const DRAWER_WIDTH = Math.min(280, SCREEN_WIDTH * 0.8);
 
-type ScreenName = "Dashboard" | "Family" | "FamilyHistory" | "ChildrenRecords" | "Wellness" | "HealthAlerts" | "Profile";
+type ScreenName = "Dashboard" | "Family" | "FamilyHistory" | "ChildrenRecords" | "Wellness" | "HealthAlerts" | "Profile" | "ConnectedDevices";
 
 interface DrawerItemProps {
   icon: keyof typeof Feather.glyphMap;
@@ -167,6 +167,12 @@ export function SidebarModal() {
                 label="My Profile"
                 isActive={currentScreen === "Profile"}
                 onPress={() => navigate("Profile")}
+              />
+              <DrawerItem
+                icon="watch"
+                label="Connected Devices"
+                isActive={currentScreen === "ConnectedDevices"}
+                onPress={() => navigate("ConnectedDevices")}
               />
             </View>
           </ScrollView>
