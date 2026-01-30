@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -10,13 +10,19 @@ interface InfoCardProps {
   title: string;
   message: string;
   variant?: "info" | "warning" | "success";
+  badge?: string;
+  actionLabel?: string;
+  onAction?: () => void;
   onDismiss?: () => void;
 }
 
 export function InfoCard({
   title,
   message,
-  variant = "info",
+  variant = "warning",
+  badge,
+  actionLabel = "Learn More",
+  onAction,
   onDismiss,
 }: InfoCardProps) {
   const { theme } = useTheme();
@@ -35,11 +41,11 @@ export function InfoCard({
   const getBackgroundColor = () => {
     switch (variant) {
       case "warning":
-        return `${theme.warning}15`;
+        return "#FEF3C7";
       case "success":
-        return `${theme.success}15`;
+        return "#D1FAE5";
       default:
-        return `${theme.info}15`;
+        return "#DBEAFE";
     }
   };
 
@@ -49,31 +55,44 @@ export function InfoCard({
         styles.container,
         {
           backgroundColor: getBackgroundColor(),
-          borderColor: getBorderColor(),
+          borderLeftColor: getBorderColor(),
         },
       ]}
     >
-      <View style={styles.content}>
-        <View style={styles.iconContainer}>
-          <Feather name="info" size={20} color={getBorderColor()} />
-        </View>
-        <View style={styles.textContainer}>
-          <ThemedText type="body" style={styles.title}>
+      <View style={styles.header}>
+        <View style={styles.titleRow}>
+          <Feather name="info" size={18} color={getBorderColor()} style={styles.icon} />
+          <ThemedText type="body" style={[styles.title, { color: theme.text }]}>
             {title}
           </ThemedText>
-          <ThemedText style={[styles.message, { color: theme.textSecondary }]}>
-            {message}
-          </ThemedText>
+          {badge ? (
+            <View style={[styles.badge, { borderColor: theme.textTertiary }]}>
+              <ThemedText style={[styles.badgeText, { color: theme.textSecondary }]}>
+                {badge}
+              </ThemedText>
+            </View>
+          ) : null}
         </View>
         {onDismiss ? (
-          <Feather
-            name="x"
-            size={20}
-            color={theme.textTertiary}
-            onPress={onDismiss}
-          />
+          <Pressable onPress={onDismiss} hitSlop={8}>
+            <Feather name="x" size={20} color={theme.textTertiary} />
+          </Pressable>
         ) : null}
       </View>
+      <ThemedText style={[styles.message, { color: theme.textSecondary }]}>
+        {message}
+      </ThemedText>
+      {onAction ? (
+        <Pressable onPress={onAction}>
+          <ThemedText style={[styles.actionText, { color: theme.text }]}>
+            {actionLabel}
+          </ThemedText>
+        </Pressable>
+      ) : (
+        <ThemedText style={[styles.actionText, { color: theme.text }]}>
+          {actionLabel}
+        </ThemedText>
+      )}
     </View>
   );
 }
@@ -81,27 +100,46 @@ export function InfoCard({
 const styles = StyleSheet.create({
   container: {
     borderRadius: BorderRadius.md,
-    borderWidth: 1,
+    borderLeftWidth: 4,
     padding: Spacing.lg,
     marginBottom: Spacing.lg,
   },
-  content: {
+  header: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "flex-start",
+    marginBottom: Spacing.sm,
   },
-  iconContainer: {
-    marginRight: Spacing.md,
-    marginTop: 2,
-  },
-  textContainer: {
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
+    gap: Spacing.sm,
+  },
+  icon: {
+    marginTop: 1,
   },
   title: {
     fontWeight: "600",
-    marginBottom: Spacing.xs,
+    fontSize: 15,
+  },
+  badge: {
+    borderWidth: 1,
+    borderRadius: BorderRadius.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "500",
   },
   message: {
     fontSize: 14,
     lineHeight: 20,
+    marginBottom: Spacing.md,
+  },
+  actionText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

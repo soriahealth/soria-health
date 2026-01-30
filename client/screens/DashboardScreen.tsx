@@ -35,16 +35,16 @@ export default function DashboardScreen() {
     >
       <View style={styles.headerRow}>
         <Pressable
-          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault }]}
+          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             openDrawer();
           }}
         >
-          <Feather name="menu" size={22} color={theme.text} />
+          <Feather name="sidebar" size={20} color={theme.text} />
         </Pressable>
         <Pressable
-          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault }]}
+          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
           onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
         >
           <Feather name="sun" size={20} color={theme.text} />
@@ -60,9 +60,10 @@ export default function DashboardScreen() {
 
       {showAnnualReminder && latestAlert ? (
         <InfoCard
-          title={latestAlert.title}
-          message={latestAlert.description}
+          title="Annual Physical Due"
+          message="It's been 11 months since your last annual physical exam. Consider scheduling an appointment."
           variant="warning"
+          badge="Preventative"
           onDismiss={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setShowAnnualReminder(false);
@@ -111,9 +112,10 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   menuButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },

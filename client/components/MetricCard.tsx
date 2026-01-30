@@ -10,7 +10,7 @@ import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { Spacing, BorderRadius } from "@/constants/theme";
 import { HealthMetric } from "@/types/health";
 
 interface MetricCardProps {
@@ -49,7 +49,7 @@ export function MetricCard({ metric, onPress }: MetricCardProps) {
     if (diffDays === 0) return "Updated today";
     if (diffDays === 1) return "Updated yesterday";
     if (diffDays < 7) return `Updated ${diffDays} days ago`;
-    return "On file";
+    return "Updated On file";
   };
 
   const getMetricLabel = (type: string) => {
@@ -78,13 +78,15 @@ export function MetricCard({ metric, onPress }: MetricCardProps) {
       onPressOut={handlePressOut}
       style={[
         styles.container,
-        { backgroundColor: theme.backgroundDefault },
-        Shadows.card,
+        {
+          backgroundColor: theme.backgroundDefault,
+          borderColor: theme.border,
+        },
         animatedStyle,
       ]}
     >
       <View style={styles.header}>
-        <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
+        <ThemedText style={[styles.label, { color: theme.text }]}>
           {getMetricLabel(metric.type)}
         </ThemedText>
         <Feather
@@ -115,6 +117,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.md,
+    borderWidth: 1,
   },
   header: {
     flexDirection: "row",
@@ -123,7 +126,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   label: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "500",
   },
   valueContainer: {

@@ -61,9 +61,12 @@ The app is in MVP state with the following features implemented:
 - `/shared/schema.ts` - Shared TypeScript schemas
 
 ## Design System
-- Primary Color: `#6BCFB8` (Soft mint green)
-- Background: `#F8FAFB` (Soft off-white)
-- Cards: White with subtle shadows
+- Primary Color: `#10B981` (Green for accents/icons)
+- Button Color: `#3B82F6` (Blue for action buttons)
+- Warning Color: `#F59E0B` (Amber for alerts with left border)
+- Background: `#F3F4F6` (Light gray)
+- Cards: White with subtle gray borders (#E5E7EB)
+- Alert Cards: Yellow background (#FEF3C7) with orange left border
 - Typography: System fonts (SF Pro/Roboto)
 - Border Radius: Rounded corners (16px for cards)
 - Icons: Feather icons from @expo/vector-icons
