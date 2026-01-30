@@ -209,6 +209,33 @@ export const preventiveCareTimeline: PreventiveCareItem[] = [
     reason: "Family history of colon cancer in grandfather at age 61",
     affectedMembers: ["Paternal Grandfather"],
   },
+  {
+    id: "5",
+    condition: "Glaucoma",
+    testType: "Comprehensive Eye Exam with Tonometry",
+    startAge: 40,
+    frequency: "Every 2 years",
+    reason: "Family history of glaucoma",
+    affectedMembers: ["Paternal Grandmother - Age 65"],
+  },
+  {
+    id: "6",
+    condition: "Alzheimer's Disease",
+    testType: "Cognitive Assessment & Brain Health Evaluation",
+    startAge: 50,
+    frequency: "Every 2-3 years, or if symptoms appear",
+    reason: "Family history of early-onset Alzheimer's",
+    affectedMembers: ["Paternal Grandmother - Age 72"],
+  },
+  {
+    id: "7",
+    condition: "Osteoporosis",
+    testType: "DEXA Bone Density Scan",
+    startAge: 50,
+    frequency: "Every 2 years for women, as recommended for men",
+    reason: "Family history of osteoporosis",
+    affectedMembers: ["Maternal Grandmother - Age 70"],
+  },
 ];
 
 export const familyConditions: MedicalCondition[] = [

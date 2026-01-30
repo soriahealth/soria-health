@@ -146,6 +146,53 @@ export default function FamilyHistoryScreen() {
       {preventiveCareTimeline.map((item) => (
         <PreventiveCareCard key={item.id} item={item} />
       ))}
+
+      <View
+        style={[
+          styles.importantNotesCard,
+          { backgroundColor: theme.backgroundDefault },
+          Shadows.card,
+        ]}
+      >
+        <ThemedText type="h4" style={styles.importantNotesTitle}>
+          Important Notes
+        </ThemedText>
+        <ThemedText style={[styles.importantNotesIntro, { color: theme.text }]}>
+          This preventive care timeline is based on general medical guidelines and your family history. The recommended screening ages are typically 10 years before the earliest age of diagnosis in your family members.
+        </ThemedText>
+        <View style={styles.bulletList}>
+          <View style={styles.bulletItem}>
+            <ThemedText style={styles.bullet}>•</ThemedText>
+            <ThemedText style={[styles.bulletText, { color: theme.text }]}>
+              Always consult with your healthcare provider for personalized recommendations
+            </ThemedText>
+          </View>
+          <View style={styles.bulletItem}>
+            <ThemedText style={styles.bullet}>•</ThemedText>
+            <ThemedText style={[styles.bulletText, { color: theme.text }]}>
+              Screening ages may be adjusted based on additional risk factors or symptoms
+            </ThemedText>
+          </View>
+          <View style={styles.bulletItem}>
+            <ThemedText style={styles.bullet}>•</ThemedText>
+            <ThemedText style={[styles.bulletText, { color: theme.text }]}>
+              Lifestyle modifications can significantly reduce your risk for hereditary conditions
+            </ThemedText>
+          </View>
+          <View style={styles.bulletItem}>
+            <ThemedText style={styles.bullet}>•</ThemedText>
+            <ThemedText style={[styles.bulletText, { color: theme.text }]}>
+              Share this information with your doctors during annual check-ups
+            </ThemedText>
+          </View>
+          <View style={styles.bulletItem}>
+            <ThemedText style={styles.bullet}>•</ThemedText>
+            <ThemedText style={[styles.bulletText, { color: theme.text }]}>
+              Keep your family medical history updated as new information becomes available
+            </ThemedText>
+          </View>
+        </View>
+      </View>
     </ScrollView>
   );
 }
@@ -204,5 +251,36 @@ const styles = StyleSheet.create({
   tagsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
+  },
+  importantNotesCard: {
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  importantNotesTitle: {
+    marginBottom: Spacing.md,
+  },
+  importantNotesIntro: {
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: Spacing.lg,
+  },
+  bulletList: {
+    gap: Spacing.sm,
+  },
+  bulletItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  bullet: {
+    fontSize: 14,
+    marginRight: Spacing.sm,
+    marginTop: 2,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
