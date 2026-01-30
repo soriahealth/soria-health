@@ -12,6 +12,7 @@ type DrawerParamList = {
   ConnectedDevices: undefined;
   NewPatientForm: undefined;
   DoctorPortal: undefined;
+  BasicInformation: undefined;
 };
 
 type DrawerContextType = {

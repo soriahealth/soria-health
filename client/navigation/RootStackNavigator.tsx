@@ -12,6 +12,7 @@ import ProfileScreen from "@/screens/ProfileScreen";
 import ConnectedDevicesScreen from "@/screens/ConnectedDevicesScreen";
 import NewPatientFormScreen from "@/screens/NewPatientFormScreen";
 import DoctorPortalScreen from "@/screens/DoctorPortalScreen";
+import BasicInformationScreen from "@/screens/BasicInformationScreen";
 import { SidebarModal } from "@/components/SidebarModal";
 
 export type RootStackParamList = {
@@ -25,6 +26,7 @@ export type RootStackParamList = {
   ConnectedDevices: undefined;
   NewPatientForm: undefined;
   DoctorPortal: undefined;
+  BasicInformation: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -50,6 +52,7 @@ export default function RootStackNavigator() {
         <Stack.Screen name="ConnectedDevices" component={ConnectedDevicesScreen} />
         <Stack.Screen name="NewPatientForm" component={NewPatientFormScreen} />
         <Stack.Screen name="DoctorPortal" component={DoctorPortalScreen} />
+        <Stack.Screen name="BasicInformation" component={BasicInformationScreen} />
       </Stack.Navigator>
       <SidebarModal />
     </>
