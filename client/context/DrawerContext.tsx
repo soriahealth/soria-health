@@ -13,6 +13,7 @@ type DrawerParamList = {
   NewPatientForm: undefined;
   DoctorPortal: undefined;
   BasicInformation: undefined;
+  AskMe: undefined;
 };
 
 type DrawerContextType = {
