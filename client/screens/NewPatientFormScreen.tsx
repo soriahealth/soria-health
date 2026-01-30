@@ -148,8 +148,8 @@ export default function NewPatientFormScreen() {
             <Checkbox
               value={selectedOptions[option.id]}
               onValueChange={() => toggleOption(option.id)}
-              color={selectedOptions[option.id] ? "#3B82F6" : "#D1D5DB"}
-              style={[styles.checkbox, { borderColor: selectedOptions[option.id] ? "#3B82F6" : "#D1D5DB" }]}
+              color={selectedOptions[option.id] ? "#3B82F6" : "#93C5FD"}
+              style={[styles.checkbox, { borderColor: selectedOptions[option.id] ? "#3B82F6" : "#93C5FD" }]}
             />
             <ThemedText style={styles.checkboxLabel}>{option.label}</ThemedText>
           </Pressable>
@@ -301,8 +301,8 @@ export default function NewPatientFormScreen() {
                     <Checkbox
                       value={selectedSymptoms[symptom] || false}
                       onValueChange={() => toggleSymptom(symptom)}
-                      color={selectedSymptoms[symptom] ? "#3B82F6" : "#D1D5DB"}
-                      style={[styles.symptomCheckbox, { borderColor: selectedSymptoms[symptom] ? "#3B82F6" : "#D1D5DB" }]}
+                      color={selectedSymptoms[symptom] ? "#3B82F6" : "#93C5FD"}
+                      style={[styles.symptomCheckbox, { borderColor: selectedSymptoms[symptom] ? "#3B82F6" : "#93C5FD" }]}
                     />
                     <ThemedText style={styles.symptomLabel}>{symptom}</ThemedText>
                   </Pressable>
