@@ -19,7 +19,7 @@ import { Spacing, BorderRadius } from "@/constants/theme";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const DRAWER_WIDTH = Math.min(280, SCREEN_WIDTH * 0.8);
 
-type ScreenName = "Dashboard" | "Family" | "FamilyHistory" | "ChildrenRecords" | "Wellness" | "HealthAlerts" | "Profile" | "ConnectedDevices" | "NewPatientForm" | "DoctorPortal" | "BasicInformation" | "AskMe";
+type ScreenName = "Dashboard" | "Family" | "FamilyHistory" | "ChildrenRecords" | "Wellness" | "HealthAlerts" | "Profile" | "ConnectedDevices" | "NewPatientForm" | "DoctorPortal" | "BasicInformation";
 
 interface DrawerItemProps {
   icon: keyof typeof Feather.glyphMap;
@@ -173,12 +173,6 @@ export function SidebarModal() {
                 label="Doctor Portal"
                 isActive={currentScreen === "DoctorPortal"}
                 onPress={() => navigate("DoctorPortal")}
-              />
-              <DrawerItem
-                icon="message-circle"
-                label="Ask Me"
-                isActive={currentScreen === "AskMe"}
-                onPress={() => navigate("AskMe")}
               />
             </View>
 
