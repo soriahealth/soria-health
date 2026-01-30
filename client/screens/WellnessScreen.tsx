@@ -47,8 +47,7 @@ function WorkoutCard({
     <View
       style={[
         styles.workoutCard,
-        { backgroundColor: theme.backgroundDefault },
-        Shadows.card,
+        { backgroundColor: theme.backgroundDefault, borderColor: theme.border },
       ]}
     >
       <View style={styles.workoutHeader}>
@@ -264,6 +263,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.lg,
+    borderWidth: 1,
   },
   workoutHeader: {
     marginBottom: Spacing.sm,
