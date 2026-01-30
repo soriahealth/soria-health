@@ -13,7 +13,7 @@ import { PreventiveCareCard } from "@/components/PreventiveCareCard";
 import { useTheme } from "@/hooks/useTheme";
 import { useDrawer } from "@/context/DrawerContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
-import { grandparents, preventiveCareTimeline } from "@/data/mockData";
+import { grandparents, parents, preventiveCareTimeline } from "@/data/mockData";
 
 const conditionsWithCounts = [
   { name: "Alzheimer's Disease", count: 1 },
@@ -92,6 +92,19 @@ export default function FamilyHistoryScreen() {
           name={gp.name}
           relationship={gp.relationship}
           conditions={gp.conditions}
+        />
+      ))}
+
+      <ThemedText style={[styles.groupLabel, { color: theme.textSecondary, marginTop: Spacing.lg }]}>
+        Parents
+      </ThemedText>
+
+      {parents.map((parent) => (
+        <GrandparentCard
+          key={parent.id}
+          name={parent.name}
+          relationship={parent.relationship}
+          conditions={parent.conditions}
         />
       ))}
 

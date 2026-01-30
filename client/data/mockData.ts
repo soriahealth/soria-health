@@ -246,6 +246,45 @@ export const grandparents = [
       { name: "High Cholesterol", age: 50 },
     ],
   },
+  {
+    id: "gp3",
+    name: "Elizabeth Doe",
+    relationship: "Paternal Grandmother",
+    conditions: [
+      { name: "Alzheimer's Disease", age: 72 },
+      { name: "Glaucoma", age: 65 },
+    ],
+  },
+  {
+    id: "gp4",
+    name: "William Doe",
+    relationship: "Paternal Grandfather",
+    conditions: [
+      { name: "Colon Cancer", age: 61 },
+      { name: "Type 2 Diabetes", age: 58 },
+    ],
+  },
+];
+
+export const parents = [
+  {
+    id: "p1",
+    name: "Jane Doe (née Smith)",
+    relationship: "Mother",
+    conditions: [
+      { name: "High Blood Pressure", age: 45 },
+      { name: "Anxiety", age: 35 },
+    ],
+  },
+  {
+    id: "p2",
+    name: "John Doe",
+    relationship: "Father",
+    conditions: [
+      { name: "High Cholesterol", age: 42 },
+      { name: "Pre-Diabetes", age: 50 },
+    ],
+  },
 ];
 
 export const recentActivities: RecentActivity[] = [

@@ -3,14 +3,14 @@ import { StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { Spacing, BorderRadius } from "@/constants/theme";
 
 interface Condition {
   name: string;
   age: number;
 }
 
-interface GrandparentCardProps {
+interface FamilyMemberCardProps {
   name: string;
   relationship: string;
   conditions: Condition[];
@@ -20,18 +20,20 @@ export function GrandparentCard({
   name,
   relationship,
   conditions,
-}: GrandparentCardProps) {
+}: FamilyMemberCardProps) {
   const { theme } = useTheme();
 
   return (
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.backgroundDefault },
-        Shadows.card,
+        { 
+          backgroundColor: theme.backgroundDefault,
+          borderLeftColor: theme.border,
+        },
       ]}
     >
-      <ThemedText type="body" style={styles.name}>
+      <ThemedText style={styles.name}>
         {name}
       </ThemedText>
       <ThemedText style={[styles.relationship, { color: theme.textSecondary }]}>
@@ -43,7 +45,7 @@ export function GrandparentCard({
             <View
               style={[
                 styles.conditionTag,
-                { backgroundColor: theme.backgroundSecondary },
+                { backgroundColor: theme.backgroundTertiary },
               ]}
             >
               <ThemedText style={[styles.conditionName, { color: theme.text }]}>
@@ -65,8 +67,10 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.md,
+    borderLeftWidth: 4,
   },
   name: {
+    fontSize: 18,
     fontWeight: "600",
     marginBottom: 2,
   },
@@ -85,7 +89,7 @@ const styles = StyleSheet.create({
   conditionTag: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.xs,
+    borderRadius: BorderRadius.sm,
   },
   conditionName: {
     fontSize: 13,
