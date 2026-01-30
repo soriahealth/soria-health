@@ -26,7 +26,7 @@ export default function AskMeScreen() {
 
   const suggestedQuestions = [
     "Are there any hereditary conditions I should watch for?",
-    "When should I schedule my next checkup?",
+    "Which child of mine takes trazadone?",
     "Explain my family history of diabetes",
     "I just added a new medication, do any of my medications have known dangerous interactions?",
   ];
