@@ -84,6 +84,30 @@ export const familyMembers: FamilyMember[] = [
     recordsShared: 15,
     avatarColor: "#E8A8F5",
   },
+  {
+    id: "child1",
+    name: "Emma Doe",
+    relationship: "daughter",
+    age: 2,
+    gender: "female",
+    bloodType: "A+",
+    conditions: [],
+    recordsShared: 5,
+    avatarColor: "#F5A8D4",
+  },
+  {
+    id: "child2",
+    name: "Liam Doe",
+    relationship: "son",
+    age: 12,
+    gender: "male",
+    bloodType: "O+",
+    conditions: [
+      { id: "c5", name: "Mild Asthma" },
+    ],
+    recordsShared: 8,
+    avatarColor: "#A8D4F5",
+  },
 ];
 
 export const deceasedFamilyMembers: FamilyMember[] = [
