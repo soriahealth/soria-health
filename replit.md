@@ -61,10 +61,11 @@ The app is in MVP state with the following features implemented:
 - `/shared/schema.ts` - Shared TypeScript schemas
 
 ## Design System
-- Primary Color: `#10B981` (Green for accents/icons)
-- Button Color: `#3B82F6` (Blue for action buttons)
+- Primary Color: `#3B82F6` (Blue for buttons and accents)
+- Success/Icon Color: `#10B981` (Green for metric icons)
 - Warning Color: `#F59E0B` (Amber for alerts with left border)
-- Background: `#F3F4F6` (Light gray)
+- Background: `#FFFFFF` (White)
+- Text: `#000000` (Black)
 - Cards: White with subtle gray borders (#E5E7EB)
 - Alert Cards: Yellow background (#FEF3C7) with orange left border
 - Typography: System fonts (SF Pro/Roboto)

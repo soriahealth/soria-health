@@ -92,7 +92,7 @@ export function MetricCard({ metric, onPress }: MetricCardProps) {
         <Feather
           name={metric.icon as any}
           size={20}
-          color={theme.primary}
+          color={theme.success}
         />
       </View>
       <View style={styles.valueContainer}>
