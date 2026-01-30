@@ -88,3 +88,16 @@ export interface UserProfile {
   conditions?: MedicalCondition[];
   medications?: Medication[];
 }
+
+export interface RecentActivity {
+  id: string;
+  title: string;
+  source: string;
+  timestamp: string;
+}
+
+export interface QuickAction {
+  id: string;
+  title: string;
+  icon: string;
+}

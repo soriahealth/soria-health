@@ -5,6 +5,8 @@ import {
   HealthAlert,
   PreventiveCareItem,
   MedicalCondition,
+  RecentActivity,
+  QuickAction,
 } from "@/types/health";
 
 export const healthMetrics: HealthMetric[] = [
@@ -243,5 +245,39 @@ export const grandparents = [
       { name: "High Blood Pressure", age: 48 },
       { name: "High Cholesterol", age: 50 },
     ],
+  },
+];
+
+export const recentActivities: RecentActivity[] = [
+  {
+    id: "1",
+    title: "Updated vital signs",
+    source: "Self-reported",
+    timestamp: "2 days ago",
+  },
+  {
+    id: "2",
+    title: "Added new medication",
+    source: "Dr. Sarah Chen",
+    timestamp: "1 week ago",
+  },
+  {
+    id: "3",
+    title: "Lab results uploaded",
+    source: "Dr. Michael Roberts",
+    timestamp: "2 weeks ago",
+  },
+];
+
+export const quickActions: QuickAction[] = [
+  {
+    id: "1",
+    title: "Share with Family Member",
+    icon: "share-2",
+  },
+  {
+    id: "2",
+    title: "Generate Patient Form",
+    icon: "plus",
   },
 ];

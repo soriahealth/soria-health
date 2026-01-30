@@ -11,8 +11,51 @@ import { InfoCard } from "@/components/InfoCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
 import { useDrawer } from "@/context/DrawerContext";
-import { Spacing } from "@/constants/theme";
-import { healthMetrics, healthAlerts } from "@/data/mockData";
+import { Spacing, BorderRadius } from "@/constants/theme";
+import { healthMetrics, healthAlerts, recentActivities, quickActions } from "@/data/mockData";
+import { RecentActivity, QuickAction } from "@/types/health";
+
+interface ActivityItemProps {
+  activity: RecentActivity;
+  isLast: boolean;
+}
+
+function ActivityItem({ activity, isLast }: ActivityItemProps) {
+  const { theme } = useTheme();
+
+  return (
+    <View style={[styles.activityItem, !isLast && { borderBottomWidth: 1, borderBottomColor: theme.border }]}>
+      <View style={[styles.activityDot, { backgroundColor: theme.primary }]} />
+      <View style={styles.activityContent}>
+        <ThemedText style={styles.activityTitle}>{activity.title}</ThemedText>
+        <ThemedText style={[styles.activitySource, { color: theme.textSecondary }]}>
+          {activity.source}
+        </ThemedText>
+        <ThemedText style={[styles.activityTime, { color: theme.textTertiary }]}>
+          {activity.timestamp}
+        </ThemedText>
+      </View>
+    </View>
+  );
+}
+
+interface QuickActionButtonProps {
+  action: QuickAction;
+}
+
+function QuickActionButton({ action }: QuickActionButtonProps) {
+  const { theme } = useTheme();
+
+  return (
+    <Pressable
+      style={[styles.quickActionButton, { borderColor: theme.border }]}
+      onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+    >
+      <Feather name={action.icon as any} size={18} color={theme.textSecondary} />
+      <ThemedText style={styles.quickActionText}>{action.title}</ThemedText>
+    </Pressable>
+  );
+}
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
@@ -90,6 +133,40 @@ export default function DashboardScreen() {
           onAction={() => {}}
         />
       )}
+
+      <View style={styles.sectionSpacing}>
+        <ThemedText type="h3" style={styles.sectionTitle}>
+          Recent Activity
+        </ThemedText>
+        <ThemedText style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+          Your latest health updates
+        </ThemedText>
+      </View>
+
+      <View style={[styles.activityCard, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
+        {recentActivities.map((activity, index) => (
+          <ActivityItem
+            key={activity.id}
+            activity={activity}
+            isLast={index === recentActivities.length - 1}
+          />
+        ))}
+      </View>
+
+      <View style={styles.sectionSpacing}>
+        <ThemedText type="h3" style={styles.sectionTitle}>
+          Quick Actions
+        </ThemedText>
+        <ThemedText style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+          Common tasks and tools
+        </ThemedText>
+      </View>
+
+      <View style={styles.quickActionsContainer}>
+        {quickActions.map((action) => (
+          <QuickActionButton key={action.id} action={action} />
+        ))}
+      </View>
     </ScrollView>
   );
 }
@@ -118,5 +195,62 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  sectionSpacing: {
+    marginTop: Spacing["2xl"],
+    marginBottom: Spacing.lg,
+  },
+  sectionTitle: {
+    marginBottom: Spacing.xs,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+  },
+  activityCard: {
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  activityItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    padding: Spacing.lg,
+  },
+  activityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 6,
+    marginRight: Spacing.md,
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  activitySource: {
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  activityTime: {
+    fontSize: 13,
+  },
+  quickActionsContainer: {
+    gap: Spacing.sm,
+  },
+  quickActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    gap: Spacing.md,
+  },
+  quickActionText: {
+    fontSize: 15,
+    fontWeight: "500",
   },
 });
