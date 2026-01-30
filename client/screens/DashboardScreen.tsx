@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
 import { useDrawer } from "@/context/DrawerContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { healthMetrics, healthAlerts, recentActivities, quickActions } from "@/data/mockData";
+import { healthMetrics, healthAlerts, recentActivities, quickActions, myMedications, myConditions } from "@/data/mockData";
 import { RecentActivity, QuickAction } from "@/types/health";
 
 interface ActivityItemProps {
@@ -134,6 +134,74 @@ export default function DashboardScreen() {
         />
       )}
 
+      <SectionHeader
+        title="My Medical Conditions"
+        icon="activity"
+        actionLabel="Edit"
+        onAction={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+      />
+
+      <View style={[styles.infoCard, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
+        {myConditions.map((condition, index) => (
+          <View
+            key={condition.id}
+            style={[
+              styles.infoRow,
+              index !== myConditions.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
+            ]}
+          >
+            <View style={styles.infoRowLeft}>
+              <View style={[styles.conditionDot, { backgroundColor: theme.warning }]} />
+              <View>
+                <ThemedText style={styles.infoRowTitle}>{condition.name}</ThemedText>
+                <ThemedText style={[styles.infoRowSubtitle, { color: theme.textSecondary }]}>
+                  Diagnosed {condition.diagnosedYear}
+                </ThemedText>
+              </View>
+            </View>
+            <View style={[styles.statusBadge, { backgroundColor: `${theme.success}20` }]}>
+              <ThemedText style={[styles.statusText, { color: theme.success }]}>
+                {condition.status}
+              </ThemedText>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      <SectionHeader
+        title="Current Medications"
+        icon="package"
+        actionLabel="Edit"
+        onAction={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+      />
+
+      <View style={[styles.infoCard, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
+        {myMedications.map((medication, index) => (
+          <View
+            key={medication.id}
+            style={[
+              styles.medicationRow,
+              index !== myMedications.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
+            ]}
+          >
+            <View style={styles.medicationHeader}>
+              <Feather name="circle" size={8} color={theme.primary} style={{ marginTop: 6 }} />
+              <View style={styles.medicationInfo}>
+                <ThemedText style={styles.medicationName}>{medication.name}</ThemedText>
+                <ThemedText style={[styles.medicationDosage, { color: theme.textSecondary }]}>
+                  {medication.dosage} - {medication.frequency}
+                </ThemedText>
+                <View style={[styles.purposeBadge, { backgroundColor: theme.backgroundSecondary }]}>
+                  <ThemedText style={[styles.purposeText, { color: theme.textSecondary }]}>
+                    {medication.purpose}
+                  </ThemedText>
+                </View>
+              </View>
+            </View>
+          </View>
+        ))}
+      </View>
+
       <View style={styles.sectionSpacing}>
         <ThemedText type="h3" style={styles.sectionTitle}>
           Recent Activity
@@ -251,6 +319,75 @@ const styles = StyleSheet.create({
   },
   quickActionText: {
     fontSize: 15,
+    fontWeight: "500",
+  },
+  infoCard: {
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: Spacing.lg,
+  },
+  infoRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    flex: 1,
+  },
+  conditionDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  infoRowTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  infoRowSubtitle: {
+    fontSize: 13,
+  },
+  statusBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.xs,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  medicationRow: {
+    padding: Spacing.lg,
+  },
+  medicationHeader: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  medicationInfo: {
+    flex: 1,
+  },
+  medicationName: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  medicationDosage: {
+    fontSize: 14,
+    marginBottom: Spacing.xs,
+  },
+  purposeBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.xs,
+    marginTop: Spacing.xs,
+  },
+  purposeText: {
+    fontSize: 12,
     fontWeight: "500",
   },
 });

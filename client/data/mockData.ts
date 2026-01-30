@@ -415,6 +415,51 @@ export const parents = [
   },
 ];
 
+export const myMedications = [
+  {
+    id: "med1",
+    name: "Lisinopril",
+    dosage: "10mg",
+    frequency: "Once daily",
+    purpose: "Blood Pressure",
+  },
+  {
+    id: "med2",
+    name: "Metformin",
+    dosage: "500mg",
+    frequency: "Twice daily",
+    purpose: "Blood Sugar",
+  },
+  {
+    id: "med3",
+    name: "Atorvastatin",
+    dosage: "20mg",
+    frequency: "Once daily at bedtime",
+    purpose: "Cholesterol",
+  },
+];
+
+export const myConditions = [
+  {
+    id: "cond1",
+    name: "Pre-Diabetes",
+    diagnosedYear: 2022,
+    status: "Managed",
+  },
+  {
+    id: "cond2",
+    name: "High Blood Pressure",
+    diagnosedYear: 2020,
+    status: "Controlled",
+  },
+  {
+    id: "cond3",
+    name: "High Cholesterol",
+    diagnosedYear: 2021,
+    status: "Managed",
+  },
+];
+
 export const recentActivities: RecentActivity[] = [
   {
     id: "1",
