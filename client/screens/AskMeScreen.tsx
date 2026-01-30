@@ -25,7 +25,6 @@ export default function AskMeScreen() {
   const [inputText, setInputText] = useState("");
 
   const suggestedQuestions = [
-    "What does my blood pressure reading mean?",
     "Are there any hereditary conditions I should watch for?",
     "When should I schedule my next checkup?",
     "Explain my family history of diabetes",
