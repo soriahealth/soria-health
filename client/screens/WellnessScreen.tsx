@@ -127,6 +127,20 @@ function WorkoutCard({
 
 const workoutPlans = [
   {
+    title: "Diabetes Prevention - Urgent",
+    intensity: "High",
+    description:
+      "HIGH RISK: Based on your family history of Type 2 Diabetes and pre-diabetic indicators. This plan focuses on blood sugar regulation and insulin sensitivity.",
+    duration: "45 minutes",
+    focusAreas: ["Blood Sugar Control", "Insulin Sensitivity", "Weight Loss"],
+    exercises: [
+      "10 min warm-up: Dynamic stretching and light cardio",
+      "15 min HIIT: 30 sec high intensity, 30 sec rest (repeat 15x)",
+      "15 min resistance training: Squats, deadlifts, rows",
+      "5 min cool-down: Walking and stretching",
+    ],
+  },
+  {
     title: "Cardiovascular Health - Beginner",
     intensity: "Low to Moderate",
     description:
