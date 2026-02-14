@@ -101,10 +101,10 @@ export function SidebarModal() {
               </View>
               <View style={styles.headerText}>
                 <ThemedText type="h4" style={styles.appName}>
-                  Family Health
+                  Soria
                 </ThemedText>
                 <ThemedText style={[styles.tagline, { color: theme.textSecondary }]}>
-                  Family Health Hub
+                  Soria Health Hub
                 </ThemedText>
               </View>
               <Pressable

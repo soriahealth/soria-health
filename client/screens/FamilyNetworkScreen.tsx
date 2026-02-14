@@ -53,7 +53,7 @@ export default function FamilyNetworkScreen() {
       </View>
 
       <ThemedText type="h2" style={styles.title}>
-        Family Health Network
+        Soria Network
       </ThemedText>
       <ThemedText style={[styles.subtitle, { color: theme.textSecondary }]}>
         View and manage your family's shared health information.
