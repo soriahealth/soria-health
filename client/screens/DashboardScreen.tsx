@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { StyleSheet, View, ScrollView, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -12,16 +14,47 @@ import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
 import { useDrawer } from "@/context/DrawerContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { healthMetrics, healthAlerts, recentActivities, quickActions, myMedications, myConditions } from "@/data/mockData";
-import { RecentActivity, QuickAction } from "@/types/health";
+import { getQueryFn } from "@/lib/query-client";
+
+const METRIC_ICONS: Record<string, string> = {
+  systolic_bp: "heart",
+  diastolic_bp: "heart",
+  heart_rate: "activity",
+  weight: "user",
+  height: "maximize-2",
+  blood_type: "droplet",
+};
+
+type AlertData = {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+};
+
+const quickActions = [
+  { id: "1", title: "Share with Family Member", icon: "share-2" },
+  { id: "2", title: "Generate Patient Form", icon: "plus" },
+];
 
 interface ActivityItemProps {
-  activity: RecentActivity;
+  activity: { id: number; title: string; message: string; createdAt: string };
   isLast: boolean;
 }
 
 function ActivityItem({ activity, isLast }: ActivityItemProps) {
   const { theme } = useTheme();
+
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
 
   return (
     <View style={[styles.activityItem, !isLast && { borderBottomWidth: 1, borderBottomColor: theme.border }]}>
@@ -29,10 +62,10 @@ function ActivityItem({ activity, isLast }: ActivityItemProps) {
       <View style={styles.activityContent}>
         <ThemedText style={styles.activityTitle}>{activity.title}</ThemedText>
         <ThemedText style={[styles.activitySource, { color: theme.textSecondary }]}>
-          {activity.source}
+          {activity.message}
         </ThemedText>
         <ThemedText style={[styles.activityTime, { color: theme.textTertiary }]}>
-          {activity.timestamp}
+          {timeAgo(activity.createdAt)}
         </ThemedText>
       </View>
     </View>
@@ -40,7 +73,7 @@ function ActivityItem({ activity, isLast }: ActivityItemProps) {
 }
 
 interface QuickActionButtonProps {
-  action: QuickAction;
+  action: { id: string; title: string; icon: string };
 }
 
 function QuickActionButton({ action }: QuickActionButtonProps) {
@@ -59,11 +92,42 @@ function QuickActionButton({ action }: QuickActionButtonProps) {
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, toggle, isDark } = useTheme();
   const { openDrawer } = useDrawer();
+  const navigation = useNavigation<any>();
   const [showAnnualReminder, setShowAnnualReminder] = useState(true);
 
-  const latestAlert = healthAlerts.find((a) => a.category === "appointment");
+  const { data: summary } = useQuery<any>({
+    queryKey: ["/api/health/summary"],
+  });
+
+  const { data: alertsData = [] } = useQuery<AlertData[]>({
+    queryKey: ["/api/alerts"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+  });
+
+  // Check age milestones on dashboard load (creates alerts if managed child turning 21)
+  useQuery({
+    queryKey: ["/api/milestones/check"],
+    staleTime: 24 * 60 * 60 * 1000, // Only check once per day
+  });
+
+  const dbMetrics = summary?.healthMetrics ?? [];
+  const dbConditions = summary?.conditions ?? [];
+  const dbMedications = summary?.medications ?? [];
+
+  // Map DB metrics to UI shape
+  const uiMetrics = dbMetrics.map((m: any) => ({
+    id: String(m.id),
+    type: m.type,
+    value: String(m.value),
+    unit: m.unit,
+    updatedAt: new Date(m.measuredAt),
+    icon: METRIC_ICONS[m.type] || "bar-chart-2",
+  }));
+
+  const latestAlert = alertsData.find((a) => !a.isRead);
+  const recentActivities = alertsData.slice(0, 5);
 
   return (
     <ScrollView
@@ -88,9 +152,12 @@ export default function DashboardScreen() {
         </Pressable>
         <Pressable
           style={[styles.menuButton, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
-          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            toggle();
+          }}
         >
-          <Feather name="sun" size={20} color={theme.text} />
+          <Feather name={isDark ? "moon" : "sun"} size={20} color={theme.text} />
         </Pressable>
       </View>
 
@@ -103,10 +170,10 @@ export default function DashboardScreen() {
 
       {showAnnualReminder && latestAlert ? (
         <InfoCard
-          title="Annual Physical Due"
-          message="It's been 11 months since your last annual physical exam. Consider scheduling an appointment."
+          title={latestAlert.title}
+          message={latestAlert.message}
           variant="warning"
-          badge="Preventative"
+          badge={latestAlert.type}
           onDismiss={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setShowAnnualReminder(false);
@@ -117,90 +184,115 @@ export default function DashboardScreen() {
       <SectionHeader
         title="Current Health Metrics"
         actionLabel="Update Metrics"
-        onAction={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+        onAction={() => navigation.navigate("HealthIntake")}
       />
 
-      {healthMetrics.length > 0 ? (
-        healthMetrics.map((metric) => (
+      {uiMetrics.length > 0 ? (
+        uiMetrics.map((metric: any) => (
           <MetricCard key={metric.id} metric={metric} />
         ))
       ) : (
-        <EmptyState
-          image={require("../../assets/images/empty-health.png")}
-          title="No Health Metrics"
-          message="Start tracking your health by adding your first metric."
-          actionLabel="Add Metric"
-          onAction={() => {}}
-        />
+        <Pressable
+          onPress={() => navigation.navigate("HealthIntake")}
+          style={[styles.emptyCard, { borderColor: theme.border }]}
+        >
+          <Feather name="plus-circle" size={24} color={theme.link} />
+          <ThemedText style={[styles.emptyCardText, { color: theme.textSecondary }]}>
+            Complete your health profile to see your metrics here
+          </ThemedText>
+        </Pressable>
       )}
 
       <SectionHeader
         title="My Medical Conditions"
         icon="activity"
         actionLabel="Edit"
-        onAction={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+        onAction={() => navigation.navigate("Reports")}
       />
 
-      <View style={[styles.infoCard, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
-        {myConditions.map((condition, index) => (
-          <View
-            key={condition.id}
-            style={[
-              styles.infoRow,
-              index !== myConditions.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
-            ]}
-          >
-            <View style={styles.infoRowLeft}>
-              <View style={[styles.conditionDot, { backgroundColor: theme.warning }]} />
-              <View>
-                <ThemedText style={styles.infoRowTitle}>{condition.name}</ThemedText>
-                <ThemedText style={[styles.infoRowSubtitle, { color: theme.textSecondary }]}>
-                  Diagnosed {condition.diagnosedYear}
-                </ThemedText>
+      {dbConditions.length > 0 ? (
+        <View style={[styles.infoCard, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
+          {dbConditions.map((condition: any, index: number) => (
+            <View
+              key={condition.id}
+              style={[
+                styles.infoRow,
+                index !== dbConditions.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
+              ]}
+            >
+              <View style={styles.infoRowLeft}>
+                <View style={[styles.conditionDot, { backgroundColor: theme.warning }]} />
+                <View>
+                  <ThemedText style={styles.infoRowTitle}>{condition.name}</ThemedText>
+                  <ThemedText style={[styles.infoRowSubtitle, { color: theme.textSecondary }]}>
+                    {condition.diagnosisDate
+                      ? `Diagnosed ${new Date(condition.diagnosisDate).getFullYear()}`
+                      : "No date"}
+                  </ThemedText>
+                </View>
               </View>
+              {condition.status ? (
+                <View style={[styles.statusBadge, { backgroundColor: `${theme.success}20` }]}>
+                  <ThemedText style={[styles.statusText, { color: theme.success }]}>
+                    {condition.status}
+                  </ThemedText>
+                </View>
+              ) : null}
             </View>
-            <View style={[styles.statusBadge, { backgroundColor: `${theme.success}20` }]}>
-              <ThemedText style={[styles.statusText, { color: theme.success }]}>
-                {condition.status}
-              </ThemedText>
-            </View>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => navigation.navigate("HealthIntake")}
+          style={[styles.emptyCard, { borderColor: theme.border }]}
+        >
+          <Feather name="plus-circle" size={24} color={theme.link} />
+          <ThemedText style={[styles.emptyCardText, { color: theme.textSecondary }]}>
+            Add your medical conditions to track them here
+          </ThemedText>
+        </Pressable>
+      )}
 
       <SectionHeader
         title="Current Medications"
         icon="package"
         actionLabel="Edit"
-        onAction={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+        onAction={() => navigation.navigate("Reports")}
       />
 
-      <View style={[styles.infoCard, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
-        {myMedications.map((medication, index) => (
-          <View
-            key={medication.id}
-            style={[
-              styles.medicationRow,
-              index !== myMedications.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
-            ]}
-          >
-            <View style={styles.medicationHeader}>
-              <Feather name="circle" size={8} color={theme.primary} style={{ marginTop: 6 }} />
-              <View style={styles.medicationInfo}>
-                <ThemedText style={styles.medicationName}>{medication.name}</ThemedText>
-                <ThemedText style={[styles.medicationDosage, { color: theme.textSecondary }]}>
-                  {medication.dosage} - {medication.frequency}
-                </ThemedText>
-                <View style={[styles.purposeBadge, { backgroundColor: theme.backgroundSecondary }]}>
-                  <ThemedText style={[styles.purposeText, { color: theme.textSecondary }]}>
-                    {medication.purpose}
+      {dbMedications.length > 0 ? (
+        <View style={[styles.infoCard, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
+          {dbMedications.map((medication: any, index: number) => (
+            <View
+              key={medication.id}
+              style={[
+                styles.medicationRow,
+                index !== dbMedications.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
+              ]}
+            >
+              <View style={styles.medicationHeader}>
+                <Feather name="circle" size={8} color={theme.primary} style={{ marginTop: 6 }} />
+                <View style={styles.medicationInfo}>
+                  <ThemedText style={styles.medicationName}>{medication.name}</ThemedText>
+                  <ThemedText style={[styles.medicationDosage, { color: theme.textSecondary }]}>
+                    {[medication.dosage, medication.frequency].filter(Boolean).join(" - ")}
                   </ThemedText>
                 </View>
               </View>
             </View>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => navigation.navigate("HealthIntake")}
+          style={[styles.emptyCard, { borderColor: theme.border }]}
+        >
+          <Feather name="plus-circle" size={24} color={theme.link} />
+          <ThemedText style={[styles.emptyCardText, { color: theme.textSecondary }]}>
+            Add your medications to track them here
+          </ThemedText>
+        </Pressable>
+      )}
 
       <View style={styles.sectionSpacing}>
         <ThemedText type="h3" style={styles.sectionTitle}>
@@ -212,13 +304,21 @@ export default function DashboardScreen() {
       </View>
 
       <View style={[styles.activityCard, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
-        {recentActivities.map((activity, index) => (
-          <ActivityItem
-            key={activity.id}
-            activity={activity}
-            isLast={index === recentActivities.length - 1}
-          />
-        ))}
+        {recentActivities.length > 0 ? (
+          recentActivities.map((activity, index) => (
+            <ActivityItem
+              key={activity.id}
+              activity={activity}
+              isLast={index === recentActivities.length - 1}
+            />
+          ))
+        ) : (
+          <View style={styles.activityItem}>
+            <ThemedText style={[styles.activitySource, { color: theme.textSecondary }]}>
+              No recent activity yet
+            </ThemedText>
+          </View>
+        )}
       </View>
 
       <View style={styles.sectionSpacing}>
@@ -379,15 +479,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: Spacing.xs,
   },
-  purposeBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.xs,
-    marginTop: Spacing.xs,
+  emptyCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    gap: Spacing.md,
   },
-  purposeText: {
-    fontSize: 12,
-    fontWeight: "500",
+  emptyCardText: {
+    fontSize: 14,
+    flex: 1,
   },
 });

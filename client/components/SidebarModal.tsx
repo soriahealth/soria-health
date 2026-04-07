@@ -10,25 +10,28 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useQuery } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useDrawer } from "@/context/DrawerContext";
+import { useAuth } from "@/context/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const DRAWER_WIDTH = Math.min(280, SCREEN_WIDTH * 0.8);
 
-type ScreenName = "Dashboard" | "Family" | "FamilyHistory" | "ChildrenRecords" | "Wellness" | "HealthAlerts" | "Profile" | "ConnectedDevices" | "NewPatientForm" | "DoctorPortal" | "BasicInformation" | "AskMe";
+type ScreenName = "Dashboard" | "Family" | "FamilyHistory" | "ChildrenRecords" | "Wellness" | "HealthAlerts" | "Profile" | "ConnectedDevices" | "NewPatientForm" | "DoctorPortal" | "BasicInformation" | "AskMe" | "Reports" | "HealthIntake" | "Documents" | "HouseholdDashboard" | "Settings" | "FamilyInsights" | "Subscription" | "CallHistory" | "Physicians" | "Refills";
 
 interface DrawerItemProps {
   icon: keyof typeof Feather.glyphMap;
   label: string;
   isActive: boolean;
   onPress: () => void;
+  badge?: number;
 }
 
-function DrawerItem({ icon, label, isActive, onPress }: DrawerItemProps) {
+function DrawerItem({ icon, label, isActive, onPress, badge }: DrawerItemProps) {
   const { theme } = useTheme();
 
   return (
@@ -60,6 +63,13 @@ function DrawerItem({ icon, label, isActive, onPress }: DrawerItemProps) {
       >
         {label}
       </ThemedText>
+      {badge != null && badge > 0 && (
+        <View style={styles.badge}>
+          <ThemedText style={styles.badgeText}>
+            {badge > 99 ? "99+" : String(badge)}
+          </ThemedText>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -68,6 +78,18 @@ export function SidebarModal() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { isOpen, currentScreen, navigate, closeDrawer } = useDrawer();
+  const { logout } = useAuth();
+
+  const { data: unreadData } = useQuery<{ count: number }>({
+    queryKey: ["/api/alerts/unread-count"],
+    enabled: isOpen,
+  });
+  const unreadCount = unreadData?.count ?? 0;
+
+  const handleLogout = async () => {
+    closeDrawer();
+    await logout();
+  };
 
   return (
     <Modal
@@ -133,6 +155,12 @@ export function SidebarModal() {
                 onPress={() => navigate("Family")}
               />
               <DrawerItem
+                icon="home"
+                label="Household Manager"
+                isActive={currentScreen === "HouseholdDashboard"}
+                onPress={() => navigate("HouseholdDashboard")}
+              />
+              <DrawerItem
                 icon="git-branch"
                 label="Family History"
                 isActive={currentScreen === "FamilyHistory"}
@@ -145,6 +173,36 @@ export function SidebarModal() {
                 onPress={() => navigate("ChildrenRecords")}
               />
               <DrawerItem
+                icon="folder"
+                label="Health Records"
+                isActive={currentScreen === "Reports"}
+                onPress={() => navigate("Reports")}
+              />
+              <DrawerItem
+                icon="zap"
+                label="Health Insights"
+                isActive={currentScreen === "FamilyInsights"}
+                onPress={() => navigate("FamilyInsights")}
+              />
+              <DrawerItem
+                icon="file-text"
+                label="Documents"
+                isActive={currentScreen === "Documents"}
+                onPress={() => navigate("Documents")}
+              />
+              <DrawerItem
+                icon="user-check"
+                label="My Physicians"
+                isActive={currentScreen === "Physicians"}
+                onPress={() => navigate("Physicians")}
+              />
+              <DrawerItem
+                icon="package"
+                label="Refills"
+                isActive={currentScreen === "Refills"}
+                onPress={() => navigate("Refills")}
+              />
+              <DrawerItem
                 icon="heart"
                 label="Wellness"
                 isActive={currentScreen === "Wellness"}
@@ -155,6 +213,7 @@ export function SidebarModal() {
                 label="Health Alerts"
                 isActive={currentScreen === "HealthAlerts"}
                 onPress={() => navigate("HealthAlerts")}
+                badge={unreadCount}
               />
             </View>
 
@@ -180,6 +239,12 @@ export function SidebarModal() {
                 isActive={currentScreen === "AskMe"}
                 onPress={() => navigate("AskMe")}
               />
+              <DrawerItem
+                icon="phone"
+                label="Call History"
+                isActive={currentScreen === "CallHistory"}
+                onPress={() => navigate("CallHistory")}
+              />
             </View>
 
             <View style={styles.section}>
@@ -199,10 +264,31 @@ export function SidebarModal() {
                 onPress={() => navigate("BasicInformation")}
               />
               <DrawerItem
+                icon="credit-card"
+                label="Subscription"
+                isActive={currentScreen === "Subscription"}
+                onPress={() => navigate("Subscription")}
+              />
+              <DrawerItem
+                icon="settings"
+                label="Settings"
+                isActive={currentScreen === "Settings"}
+                onPress={() => navigate("Settings")}
+              />
+              <DrawerItem
                 icon="watch"
                 label="Connected Devices"
                 isActive={currentScreen === "ConnectedDevices"}
                 onPress={() => navigate("ConnectedDevices")}
+              />
+            </View>
+
+            <View style={styles.section}>
+              <DrawerItem
+                icon="log-out"
+                label="Log Out"
+                isActive={false}
+                onPress={handleLogout}
               />
             </View>
           </ScrollView>
@@ -275,5 +361,21 @@ const styles = StyleSheet.create({
   },
   drawerItemLabel: {
     fontSize: 15,
+    flex: 1,
+  },
+  badge: {
+    backgroundColor: "#EF4444",
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingHorizontal: 6,
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700" as const,
+    lineHeight: 14,
   },
 });

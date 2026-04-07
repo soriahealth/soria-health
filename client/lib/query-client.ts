@@ -7,11 +7,14 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 export function getApiUrl(): string {
   let host = process.env.EXPO_PUBLIC_DOMAIN;
 
+  // Fallback: ngrok tunnel for mobile testing
   if (!host) {
-    throw new Error("EXPO_PUBLIC_DOMAIN is not set");
+    host = "glummest-isreal-unready.ngrok-free.dev";
   }
 
-  let url = new URL(`https://${host}`);
+  const isLocal = host.startsWith("localhost") || host.startsWith("127.0.0.1") || host.startsWith("192.168.") || host.startsWith("10.") || host.startsWith("172.");
+  const protocol = isLocal ? "http" : "https";
+  let url = new URL(`${protocol}://${host}`);
 
   return url.href;
 }
@@ -33,7 +36,10 @@ export async function apiRequest(
 
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: {
+      ...(data ? { "Content-Type": "application/json" } : {}),
+      "ngrok-skip-browser-warning": "true",
+    },
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -53,6 +59,9 @@ export const getQueryFn: <T>(options: {
 
     const res = await fetch(url, {
       credentials: "include",
+      headers: {
+        "ngrok-skip-browser-warning": "true",
+      },
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

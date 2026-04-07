@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet, View, Image, ImageSourcePropType } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
-import { Button } from "@/components/Button";
+import Button from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing } from "@/constants/theme";
 

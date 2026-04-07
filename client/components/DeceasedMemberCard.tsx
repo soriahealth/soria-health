@@ -6,10 +6,18 @@ import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { FamilyMember } from "@/types/health";
+interface DeceasedMember {
+  id: number;
+  name: string;
+  relationship: string;
+  dateOfBirth?: string | null;
+  dateOfDeath?: string | null;
+  causeOfDeath?: string | null;
+  conditions?: { name: string; diagnosedAge?: string }[];
+}
 
 interface DeceasedMemberCardProps {
-  member: FamilyMember;
+  member: DeceasedMember;
   onPress?: () => void;
 }
 
@@ -65,24 +73,32 @@ export function DeceasedMemberCard({ member, onPress }: DeceasedMemberCardProps)
       </View>
 
       <View style={styles.detailsRow}>
-        <View style={styles.detailItem}>
-          <ThemedText style={[styles.detailLabel, { color: theme.textSecondary }]}>
-            Born
-          </ThemedText>
-          <ThemedText style={styles.detailValue}>{member.yearOfBirth}</ThemedText>
-        </View>
-        <View style={styles.detailItem}>
-          <ThemedText style={[styles.detailLabel, { color: theme.textSecondary }]}>
-            Passed
-          </ThemedText>
-          <ThemedText style={styles.detailValue}>{member.yearOfDeath}</ThemedText>
-        </View>
-        <View style={styles.detailItem}>
-          <ThemedText style={[styles.detailLabel, { color: theme.textSecondary }]}>
-            Age
-          </ThemedText>
-          <ThemedText style={styles.detailValue}>{member.age}</ThemedText>
-        </View>
+        {member.dateOfBirth && (
+          <View style={styles.detailItem}>
+            <ThemedText style={[styles.detailLabel, { color: theme.textSecondary }]}>
+              Born
+            </ThemedText>
+            <ThemedText style={styles.detailValue}>{new Date(member.dateOfBirth).getFullYear()}</ThemedText>
+          </View>
+        )}
+        {member.dateOfDeath && (
+          <View style={styles.detailItem}>
+            <ThemedText style={[styles.detailLabel, { color: theme.textSecondary }]}>
+              Passed
+            </ThemedText>
+            <ThemedText style={styles.detailValue}>{new Date(member.dateOfDeath).getFullYear()}</ThemedText>
+          </View>
+        )}
+        {member.dateOfBirth && member.dateOfDeath && (
+          <View style={styles.detailItem}>
+            <ThemedText style={[styles.detailLabel, { color: theme.textSecondary }]}>
+              Age
+            </ThemedText>
+            <ThemedText style={styles.detailValue}>
+              {new Date(member.dateOfDeath).getFullYear() - new Date(member.dateOfBirth).getFullYear()}
+            </ThemedText>
+          </View>
+        )}
       </View>
 
       {member.causeOfDeath && (
@@ -99,7 +115,7 @@ export function DeceasedMemberCard({ member, onPress }: DeceasedMemberCardProps)
           Medical Conditions
         </ThemedText>
         <View style={styles.conditionsList}>
-          {member.conditions.map((condition, index) => (
+          {(member.conditions ?? []).map((condition, index) => (
             <View key={index} style={[styles.conditionBadge, { backgroundColor: theme.backgroundTertiary }]}>
               <ThemedText style={[styles.conditionText, { color: theme.text }]}>
                 {condition.name}

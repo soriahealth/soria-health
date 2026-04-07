@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   StyleSheet,
   View,
@@ -7,6 +7,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -16,20 +17,168 @@ import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useDrawer } from "@/context/DrawerContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { getApiUrl } from "@/lib/query-client";
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+}
 
 export default function AskMeScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { openDrawer } = useDrawer();
 
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const suggestedQuestions = [
-    "Are there any hereditary conditions I should watch for?",
-    "Which child of mine takes trazadone?",
-    "Explain my family history of diabetes",
-    "I just added a new medication, do any of my medications have known dangerous interactions?",
+    "What medications am I currently taking?",
+    "Summarize my health conditions",
+    "What should I know about my allergies?",
+    "Tell me about my uploaded documents",
   ];
+
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, []);
+
+  const sendMessage = useCallback(
+    async (text: string) => {
+      if (!text.trim() || isStreaming) return;
+
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: "user",
+        content: text.trim(),
+      };
+
+      const assistantMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "",
+      };
+
+      const updatedMessages = [...messages, userMessage];
+      setMessages([...updatedMessages, assistantMessage]);
+      setInputText("");
+      setIsStreaming(true);
+      scrollToBottom();
+
+      const chatMessages = updatedMessages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      try {
+        const controller = new AbortController();
+        abortRef.current = controller;
+
+        const response = await fetch(`${getApiUrl()}api/askme/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: chatMessages }),
+          credentials: "include",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(
+            errorData?.message || `Request failed with status ${response.status}`,
+          );
+        }
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let fullContent = "";
+
+        if (reader) {
+          let buffer = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            // Keep the last (potentially incomplete) line in the buffer
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith("data: ")) continue;
+              const data = trimmed.slice(6);
+              if (data === "[DONE]") break;
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.error) {
+                  throw new Error(parsed.error);
+                }
+                if (parsed.content) {
+                  fullContent += parsed.content;
+                  setMessages((prev) => {
+                    const updated = [...prev];
+                    const last = updated[updated.length - 1];
+                    if (last && last.role === "assistant") {
+                      updated[updated.length - 1] = {
+                        ...last,
+                        content: fullContent,
+                      };
+                    }
+                    return updated;
+                  });
+                  scrollToBottom();
+                }
+              } catch (e) {
+                // Skip unparseable lines (partial JSON, etc.)
+                if (e instanceof Error && e.message !== "Something went wrong") {
+                  // ignore parse errors
+                }
+              }
+            }
+          }
+        }
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
+        console.error("Ask Me fetch error:", err);
+        setMessages((prev) => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          if (last && last.role === "assistant") {
+            updated[updated.length - 1] = {
+              ...last,
+              content:
+                "Sorry, I wasn't able to respond right now. Please try again.",
+            };
+          }
+          return updated;
+        });
+      } finally {
+        setIsStreaming(false);
+        abortRef.current = null;
+      }
+    },
+    [messages, isStreaming, scrollToBottom],
+  );
+
+  const handleSuggestionPress = (question: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    sendMessage(question);
+  };
+
+  const handleSend = () => {
+    if (!inputText.trim() || isStreaming) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    sendMessage(inputText);
+  };
+
+  const hasMessages = messages.length > 0;
 
   return (
     <KeyboardAvoidingView
@@ -37,10 +186,17 @@ export default function AskMeScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={0}
     >
+      {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + Spacing.lg }]}>
         <View style={styles.headerRow}>
           <Pressable
-            style={[styles.menuButton, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
+            style={[
+              styles.menuButton,
+              {
+                backgroundColor: theme.backgroundDefault,
+                borderColor: theme.border,
+              },
+            ]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               openDrawer();
@@ -48,86 +204,188 @@ export default function AskMeScreen() {
           >
             <Feather name="sidebar" size={20} color={theme.text} />
           </Pressable>
-          <Pressable
-            style={[styles.menuButton, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
-            onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-          >
-            <Feather name="sun" size={20} color={theme.text} />
-          </Pressable>
+          <ThemedText type="h4">Ask Me</ThemedText>
+          <View style={{ width: 40 }} />
         </View>
-
-        <ThemedText type="h2" style={styles.title}>
-          Ask Me
-        </ThemedText>
-        <ThemedText style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Get answers about your health data, medical history, and wellness insights.
-        </ThemedText>
       </View>
 
+      {/* Chat area */}
       <ScrollView
+        ref={scrollViewRef}
         style={styles.chatContainer}
-        contentContainerStyle={[styles.chatContent, styles.emptyChat]}
+        contentContainerStyle={[
+          styles.chatContent,
+          !hasMessages && styles.emptyChat,
+        ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        onContentSizeChange={() => {
+          if (hasMessages) scrollToBottom();
+        }}
       >
-        <View style={styles.emptyState}>
-          <View style={[styles.aiIcon, { backgroundColor: "#EBF5FF" }]}>
-            <Feather name="message-circle" size={32} color="#3B82F6" />
-          </View>
-          <ThemedText style={styles.emptyTitle}>Start a conversation</ThemedText>
-          <ThemedText style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-            Ask questions about your health data, medications, test results, or family medical history.
-          </ThemedText>
-
-          <View style={[styles.comingSoonBadge, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B" }]}>
-            <Feather name="clock" size={14} color="#D97706" />
-            <ThemedText style={[styles.comingSoonText, { color: "#92400E" }]}>
-              Coming Soon
+        {!hasMessages ? (
+          <View style={styles.emptyState}>
+            <View style={[styles.aiIcon, { backgroundColor: "#EBF5FF" }]}>
+              <Feather name="cpu" size={32} color="#3B82F6" />
+            </View>
+            <ThemedText style={styles.emptyTitle}>
+              Hi! I'm Soria, your health assistant.
             </ThemedText>
-          </View>
-
-          <ThemedText style={[styles.comingSoonDescription, { color: theme.textTertiary }]}>
-            This feature is currently in development. Soon you'll be able to ask questions and get personalized insights based on your health records.
-          </ThemedText>
-
-          <View style={styles.suggestions}>
-            <ThemedText style={[styles.suggestionsLabel, { color: theme.textSecondary }]}>
-              Example questions:
+            <ThemedText
+              style={[styles.emptySubtitle, { color: theme.textSecondary }]}
+            >
+              Ask me anything about your health data, medications, conditions, or uploaded documents.
             </ThemedText>
-            {suggestedQuestions.map((question, index) => (
-              <View
-                key={index}
-                style={[styles.suggestionItem, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
+
+            <View style={styles.suggestions}>
+              <ThemedText
+                style={[styles.suggestionsLabel, { color: theme.textSecondary }]}
               >
-                <Feather name="message-square" size={14} color={theme.textTertiary} />
-                <ThemedText style={[styles.suggestionText, { color: theme.textSecondary }]}>
-                  {question}
+                Try asking:
+              </ThemedText>
+              {suggestedQuestions.map((question, index) => (
+                <Pressable
+                  key={index}
+                  style={[
+                    styles.suggestionItem,
+                    {
+                      backgroundColor: theme.backgroundDefault,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                  onPress={() => handleSuggestionPress(question)}
+                >
+                  <Feather
+                    name="message-square"
+                    size={14}
+                    color={theme.textTertiary}
+                  />
+                  <ThemedText
+                    style={[styles.suggestionText, { color: theme.textSecondary }]}
+                  >
+                    {question}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : (
+          messages.map((msg) => (
+            <View
+              key={msg.id}
+              style={[
+                styles.messageBubble,
+                msg.role === "user"
+                  ? styles.userBubble
+                  : [
+                      styles.assistantBubble,
+                      { backgroundColor: theme.backgroundSecondary },
+                    ],
+              ]}
+            >
+              <View style={styles.messageHeader}>
+                <View
+                  style={[
+                    styles.roleIcon,
+                    {
+                      backgroundColor:
+                        msg.role === "user" ? "#3B82F6" : "#10B981",
+                    },
+                  ]}
+                >
+                  <Feather
+                    name={msg.role === "user" ? "user" : "cpu"}
+                    size={12}
+                    color="#FFFFFF"
+                  />
+                </View>
+                <ThemedText
+                  style={[styles.roleName, { color: theme.textSecondary }]}
+                >
+                  {msg.role === "user" ? "You" : "Soria"}
                 </ThemedText>
               </View>
-            ))}
-          </View>
-        </View>
+              {msg.content ? (
+                <ThemedText style={styles.messageText}>
+                  {msg.content}
+                </ThemedText>
+              ) : (
+                isStreaming &&
+                msg.role === "assistant" && (
+                  <View style={styles.typingIndicator}>
+                    <ActivityIndicator size="small" color={theme.textTertiary} />
+                    <ThemedText
+                      style={[
+                        styles.typingText,
+                        { color: theme.textTertiary },
+                      ]}
+                    >
+                      Thinking...
+                    </ThemedText>
+                  </View>
+                )
+              )}
+            </View>
+          ))
+        )}
       </ScrollView>
 
-      <View style={[styles.inputContainer, { paddingBottom: insets.bottom + Spacing.md, backgroundColor: theme.backgroundRoot }]}>
-        <View style={[styles.inputWrapper, { backgroundColor: theme.backgroundTertiary, borderColor: theme.border }]}>
+      {/* Input bar */}
+      <View
+        style={[
+          styles.inputContainer,
+          {
+            paddingBottom: insets.bottom + Spacing.md,
+            backgroundColor: theme.backgroundRoot,
+            borderTopColor: theme.border,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.inputWrapper,
+            {
+              backgroundColor: theme.backgroundTertiary,
+              borderColor: theme.border,
+            },
+          ]}
+        >
           <TextInput
-            style={[styles.input, { color: theme.textTertiary }]}
+            style={[styles.input, { color: theme.text }]}
             placeholder="Ask about your health..."
             placeholderTextColor={theme.textTertiary}
             value={inputText}
             onChangeText={setInputText}
             multiline
             maxLength={1000}
-            editable={false}
+            editable={!isStreaming}
+            onSubmitEditing={handleSend}
+            blurOnSubmit={false}
           />
-          <View
-            style={[styles.sendButton, { backgroundColor: theme.backgroundTertiary }]}
+          <Pressable
+            style={[
+              styles.sendButton,
+              {
+                backgroundColor:
+                  inputText.trim() && !isStreaming
+                    ? "#3B82F6"
+                    : theme.backgroundTertiary,
+              },
+            ]}
+            onPress={handleSend}
+            disabled={!inputText.trim() || isStreaming}
           >
-            <Feather name="send" size={18} color={theme.textTertiary} />
-          </View>
+            <Feather
+              name="send"
+              size={18}
+              color={
+                inputText.trim() && !isStreaming ? "#FFFFFF" : theme.textTertiary
+              }
+            />
+          </Pressable>
         </View>
         <ThemedText style={[styles.disclaimer, { color: theme.textTertiary }]}>
-          This feature is not yet available. Check back soon for updates.
+          Soria is an AI assistant, not a doctor. Always consult your healthcare provider for medical decisions.
         </ThemedText>
       </View>
     </KeyboardAvoidingView>
@@ -146,7 +404,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: Spacing.lg,
   },
   menuButton: {
     width: 40,
@@ -155,13 +412,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-  },
-  title: {
-    marginBottom: Spacing.xs,
-  },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
   },
   chatContainer: {
     flex: 1,
@@ -190,31 +440,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     marginBottom: Spacing.sm,
+    textAlign: "center",
   },
   emptySubtitle: {
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
-    marginBottom: Spacing.lg,
-  },
-  comingSoonBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    gap: Spacing.xs,
-    marginBottom: Spacing.md,
-  },
-  comingSoonText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  comingSoonDescription: {
-    fontSize: 13,
-    textAlign: "center",
-    lineHeight: 18,
     marginBottom: Spacing.xl,
   },
   suggestions: {
@@ -238,9 +469,50 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
   },
+  messageBubble: {
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  userBubble: {
+    backgroundColor: "transparent",
+  },
+  assistantBubble: {
+    borderRadius: BorderRadius.md,
+  },
+  messageHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  roleIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roleName: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  messageText: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  typingIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  typingText: {
+    fontSize: 14,
+  },
   inputContainer: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
+    borderTopWidth: 1,
   },
   inputWrapper: {
     flexDirection: "row",

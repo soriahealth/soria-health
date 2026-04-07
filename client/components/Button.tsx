@@ -1,11 +1,5 @@
 import React, { ReactNode } from "react";
-import { StyleSheet, Pressable, ViewStyle, StyleProp } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  WithSpringConfig,
-} from "react-native-reanimated";
+import { StyleSheet, TouchableOpacity, ViewStyle, StyleProp, Platform } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
@@ -19,17 +13,7 @@ interface ButtonProps {
   variant?: "primary" | "secondary" | "outline";
 }
 
-const springConfig: WithSpringConfig = {
-  damping: 15,
-  mass: 0.3,
-  stiffness: 150,
-  overshootClamping: true,
-  energyThreshold: 0.001,
-};
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-export function Button({
+export default function Button({
   onPress,
   children,
   style,
@@ -37,23 +21,6 @@ export function Button({
   variant = "primary",
 }: ButtonProps) {
   const { theme } = useTheme();
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    if (!disabled) {
-      scale.value = withSpring(0.98, springConfig);
-    }
-  };
-
-  const handlePressOut = () => {
-    if (!disabled) {
-      scale.value = withSpring(1, springConfig);
-    }
-  };
 
   const getBackgroundColor = () => {
     if (variant === "outline") return "transparent";
@@ -73,11 +40,10 @@ export function Button({
   };
 
   return (
-    <AnimatedPressable
+    <TouchableOpacity
       onPress={disabled ? undefined : onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
       disabled={disabled}
+      activeOpacity={0.8}
       style={[
         styles.button,
         {
@@ -87,7 +53,6 @@ export function Button({
           opacity: disabled ? 0.5 : 1,
         },
         style,
-        animatedStyle,
       ]}
     >
       <ThemedText
@@ -96,7 +61,7 @@ export function Button({
       >
         {children}
       </ThemedText>
-    </AnimatedPressable>
+    </TouchableOpacity>
   );
 }
 

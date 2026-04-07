@@ -1,27 +1,68 @@
 import React, { useState } from "react";
-import { StyleSheet, View, ScrollView, Pressable } from "react-native";
+import { StyleSheet, View, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useQuery } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/ThemedText";
-import { ChildCard } from "@/components/ChildCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
 import { useDrawer } from "@/context/DrawerContext";
 import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
-import { children } from "@/data/mockData";
+import { getQueryFn } from "@/lib/query-client";
+
+type ManagedChild = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string | null;
+  biologicalSex: string | null;
+  relationship?: string | null;
+};
+
+const CHILD_RELATIONSHIPS = ["child", "son", "daughter", "stepchild", "stepson", "stepdaughter", "foster child"];
 
 export default function ChildrenRecordsScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { openDrawer } = useDrawer();
-  const [selectedChildId, setSelectedChildId] = useState(children[0]?.id || "");
+  const navigation = useNavigation<any>();
 
-  const selectedChild = children.find((c) => c.id === selectedChildId);
+  const { data: managedProfiles = [], isLoading } = useQuery<ManagedChild[]>({
+    queryKey: ["/api/family/managed"],
+    queryFn: getQueryFn({ on401: "throw" }),
+  });
+
+  // Filter for child relationships
+  const children = managedProfiles.filter(
+    (p) => CHILD_RELATIONSHIPS.includes((p.relationship || "").toLowerCase())
+  );
+
+  const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
+  const activeId = selectedChildId ?? children[0]?.id ?? null;
+  const selectedChild = children.find((c) => c.id === activeId);
+
+  // Fetch health summary for selected child
+  const { data: childSummary } = useQuery<any>({
+    queryKey: ["/api/household/health-summary", activeId],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: !!activeId,
+  });
 
   const handleAddChild = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    navigation.navigate("AddFamilyMember");
+  };
+
+  const getAge = (dob: string | null) => {
+    if (!dob) return null;
+    const birth = new Date(dob);
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--;
+    return age;
   };
 
   const renderField = (label: string, value?: string) => (
@@ -86,152 +127,120 @@ export default function ChildrenRecordsScreen() {
         Manage medical information for your children under 18 years old.
       </ThemedText>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.childSelector}
-        contentContainerStyle={styles.childSelectorContent}
-      >
-        {children.map((child) => (
-          <ChildCard
-            key={child.id}
-            child={child}
-            isSelected={child.id === selectedChildId}
-            onPress={() => setSelectedChildId(child.id)}
-          />
-        ))}
-        <Pressable
-          style={[styles.addChildButton, { borderColor: theme.border }]}
-          onPress={handleAddChild}
-        >
-          <Feather name="plus" size={16} color={theme.textSecondary} />
-          <ThemedText style={[styles.addChildText, { color: theme.textSecondary }]}>
-            Add Child
-          </ThemedText>
-        </Pressable>
-      </ScrollView>
-
-      {selectedChild ? (
+      {isLoading ? (
+        <ActivityIndicator size="large" color={theme.link} style={{ marginTop: Spacing.xl }} />
+      ) : (
         <>
-          <View
-            style={[
-              styles.sectionCard,
-              { backgroundColor: theme.backgroundDefault },
-              Shadows.card,
-            ]}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.childSelector}
+            contentContainerStyle={styles.childSelectorContent}
           >
-            <View style={styles.sectionHeader}>
-              <View>
-                <ThemedText type="h4">Personal Information</ThemedText>
-                <ThemedText
-                  style={[styles.sectionSubtitle, { color: theme.textSecondary }]}
-                >
-                  {selectedChild.name}'s basic details
-                </ThemedText>
-              </View>
+            {children.map((child) => (
               <Pressable
-                style={[styles.editButton, { borderColor: theme.border }]}
-                onPress={() =>
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-                }
+                key={child.id}
+                onPress={() => setSelectedChildId(child.id)}
+                style={[
+                  styles.addChildButton,
+                  {
+                    borderColor: child.id === activeId ? theme.link : theme.border,
+                    backgroundColor: child.id === activeId ? theme.link + "15" : "transparent",
+                  },
+                ]}
               >
-                <Feather name="edit-2" size={14} color={theme.textSecondary} />
-                <ThemedText
-                  style={[styles.editButtonText, { color: theme.textSecondary }]}
-                >
-                  Edit
+                <ThemedText style={[styles.addChildText, { color: child.id === activeId ? theme.link : theme.textSecondary }]}>
+                  {child.firstName}
                 </ThemedText>
               </Pressable>
-            </View>
+            ))}
+            <Pressable
+              style={[styles.addChildButton, { borderColor: theme.border }]}
+              onPress={handleAddChild}
+            >
+              <Feather name="plus" size={16} color={theme.textSecondary} />
+              <ThemedText style={[styles.addChildText, { color: theme.textSecondary }]}>
+                Add Child
+              </ThemedText>
+            </Pressable>
+          </ScrollView>
 
-            {renderField("Full Name", selectedChild.name)}
-            {renderField(
-              "Date of Birth",
-              selectedChild.dateOfBirth.toLocaleDateString()
-            )}
-            {renderField("Gender", selectedChild.gender)}
-            {renderField("Age", `${selectedChild.age}`)}
-            {renderField("Blood Type", selectedChild.bloodType)}
-            {renderField("Height", selectedChild.height)}
-            {renderField("Weight", selectedChild.weight)}
-          </View>
+          {selectedChild ? (
+            <>
+              <View
+                style={[
+                  styles.sectionCard,
+                  { backgroundColor: theme.backgroundDefault },
+                  Shadows.card,
+                ]}
+              >
+                <View style={styles.sectionHeader}>
+                  <View>
+                    <ThemedText type="h4">Personal Information</ThemedText>
+                    <ThemedText style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+                      {selectedChild.firstName}'s basic details
+                    </ThemedText>
+                  </View>
+                  <Pressable
+                    style={[styles.editButton, { borderColor: theme.border }]}
+                    onPress={() => navigation.navigate("EditManagedProfile", { profileId: selectedChild.id })}
+                  >
+                    <Feather name="edit-2" size={14} color={theme.textSecondary} />
+                    <ThemedText style={[styles.editButtonText, { color: theme.textSecondary }]}>
+                      Edit
+                    </ThemedText>
+                  </Pressable>
+                </View>
 
-          <View
-            style={[
-              styles.sectionCard,
-              { backgroundColor: theme.backgroundDefault },
-              Shadows.card,
-            ]}
-          >
-            <View style={styles.sectionHeader}>
-              <View>
-                <ThemedText type="h4">Medical Information</ThemedText>
-                <ThemedText
-                  style={[styles.sectionSubtitle, { color: theme.textSecondary }]}
-                >
-                  {selectedChild.name}'s health details
-                </ThemedText>
+                {renderField("Full Name", `${selectedChild.firstName} ${selectedChild.lastName}`)}
+                {renderField("Date of Birth", selectedChild.dateOfBirth ? new Date(selectedChild.dateOfBirth).toLocaleDateString() : undefined)}
+                {renderField("Sex", selectedChild.biologicalSex || undefined)}
+                {renderField("Age", getAge(selectedChild.dateOfBirth) != null ? `${getAge(selectedChild.dateOfBirth)}` : undefined)}
               </View>
-            </View>
 
-            {renderField("Allergies", selectedChild.allergies)}
-            {renderField("Current Medications", selectedChild.medications)}
-            {renderField("Medical Conditions", selectedChild.conditions)}
-            {renderField("Immunization Record", selectedChild.immunizations)}
-          </View>
+              <View
+                style={[
+                  styles.sectionCard,
+                  { backgroundColor: theme.backgroundDefault },
+                  Shadows.card,
+                ]}
+              >
+                <View style={styles.sectionHeader}>
+                  <View>
+                    <ThemedText type="h4">Medical Information</ThemedText>
+                    <ThemedText style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+                      {selectedChild.firstName}'s health details
+                    </ThemedText>
+                  </View>
+                </View>
 
-          <View
-            style={[
-              styles.sectionCard,
-              { backgroundColor: theme.backgroundDefault },
-              Shadows.card,
-            ]}
-          >
-            <View style={styles.sectionHeader}>
-              <View>
-                <ThemedText type="h4">Pediatrician Information</ThemedText>
-                <ThemedText
-                  style={[styles.sectionSubtitle, { color: theme.textSecondary }]}
-                >
-                  {selectedChild.name}'s primary care doctor
-                </ThemedText>
+                {renderField("Allergies", childSummary?.allergies?.map((a: any) => a.allergen).join(", ") || undefined)}
+                {renderField("Current Medications", childSummary?.medications?.map((m: any) => m.name).join(", ") || undefined)}
+                {renderField("Medical Conditions", childSummary?.conditions?.map((c: any) => c.name).join(", ") || undefined)}
               </View>
-            </View>
 
-            {renderField("Pediatrician Name", selectedChild.pediatricianName)}
-            {renderField("Phone Number", selectedChild.pediatricianPhone)}
-          </View>
-
-          <View
-            style={[
-              styles.sectionCard,
-              { backgroundColor: theme.backgroundDefault },
-              Shadows.card,
-            ]}
-          >
-            <View style={styles.sectionHeader}>
-              <View>
-                <ThemedText type="h4">Emergency Contact</ThemedText>
-                <ThemedText
-                  style={[styles.sectionSubtitle, { color: theme.textSecondary }]}
-                >
-                  Primary emergency contact for {selectedChild.name}
-                </ThemedText>
-              </View>
-            </View>
-
-            {renderField("Contact Information", selectedChild.emergencyContact)}
-            {renderField("Relationship", selectedChild.emergencyRelationship)}
-          </View>
+              <Pressable
+                style={[styles.sectionCard, { backgroundColor: theme.link + "10" }, Shadows.card]}
+                onPress={() => navigation.navigate("FamilyMemberIntake", { profileId: selectedChild.id, firstName: selectedChild.firstName })}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.md }}>
+                  <Feather name="edit" size={18} color={theme.link} />
+                  <ThemedText style={{ color: theme.link, fontWeight: "600" }}>
+                    Update {selectedChild.firstName}'s Health Records
+                  </ThemedText>
+                </View>
+              </Pressable>
+            </>
+          ) : (
+            <EmptyState
+              image={require("../../assets/images/empty-health.png")}
+              title="No Children Added"
+              message="Add your children to manage their health records in one place."
+              actionLabel="Add Child"
+              onAction={handleAddChild}
+            />
+          )}
         </>
-      ) : (
-        <EmptyState
-          image={require("../../assets/images/empty-health.png")}
-          title="No Children Added"
-          message="Add your children to manage their health records in one place."
-          actionLabel="Add Child"
-          onAction={handleAddChild}
-        />
       )}
     </ScrollView>
   );

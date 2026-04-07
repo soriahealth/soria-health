@@ -1,67 +1,155 @@
 import React from "react";
-import { StyleSheet, View, ScrollView, Pressable } from "react-native";
+import {
+  StyleSheet,
+  View,
+  ScrollView,
+  Pressable,
+  Alert,
+  Image,
+  ActivityIndicator,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/ThemedText";
+import Button from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { useDrawer } from "@/context/DrawerContext";
+import { useAuth } from "@/context/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { getQueryFn, apiRequest, queryClient, getApiUrl } from "@/lib/query-client";
+import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
-interface ProfileFieldProps {
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+type HealthSummary = {
+  conditions: any[];
+  medications: any[];
+  allergies: any[];
+  surgeries: any[];
+  healthMetrics: any[];
+  socialHistory: any;
+  emergencyContacts: any[];
+  insurance: any[];
+};
+
+function ProfileField({
+  label,
+  value,
+  theme,
+}: {
   label: string;
   value: string;
-  multiline?: boolean;
-}
-
-function ProfileField({ label, value, multiline }: ProfileFieldProps) {
-  const { theme } = useTheme();
-
+  theme: any;
+}) {
   return (
     <View style={styles.fieldContainer}>
-      <ThemedText style={[styles.fieldLabel, { color: theme.text }]}>
+      <ThemedText style={[styles.fieldLabel, { color: theme.textSecondary }]}>
         {label}
       </ThemedText>
-      <View style={[styles.fieldInput, { borderColor: theme.border }, multiline && styles.fieldInputMultiline]}>
-        <ThemedText style={[styles.fieldValue, { color: theme.textSecondary }]}>
-          {value}
-        </ThemedText>
-      </View>
+      <ThemedText style={[styles.fieldValue, { color: theme.text }]}>
+        {value || "—"}
+      </ThemedText>
     </View>
   );
 }
 
-interface PrivacySettingProps {
-  title: string;
-  description: string;
-  enabled: boolean;
-}
-
-function PrivacySetting({ title, description, enabled }: PrivacySettingProps) {
-  const { theme } = useTheme();
-
-  return (
-    <View style={[styles.privacyItem, { borderBottomColor: theme.border }]}>
-      <View style={styles.privacyContent}>
-        <ThemedText style={styles.privacyTitle}>{title}</ThemedText>
-        <ThemedText style={[styles.privacyDescription, { color: theme.textSecondary }]}>
-          {description}
-        </ThemedText>
-      </View>
-      <View style={[styles.privacyBadge, { backgroundColor: enabled ? "#D1FAE5" : theme.backgroundTertiary }]}>
-        <ThemedText style={[styles.privacyBadgeText, { color: enabled ? "#059669" : theme.textSecondary }]}>
-          {enabled ? "Enabled" : "Disabled"}
-        </ThemedText>
-      </View>
-    </View>
-  );
+function formatDOB(dob: string | null): string {
+  if (!dob) return "—";
+  const parts = dob.split("-");
+  if (parts.length === 3 && parts[0].length === 4) {
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
+  return dob;
 }
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, toggle, isDark } = useTheme();
   const { openDrawer } = useDrawer();
+  const navigation = useNavigation<Nav>();
+  const { user, profile } = useAuth();
+
+  const { data: healthData, isLoading: healthLoading } = useQuery<HealthSummary>({
+    queryKey: ["/api/health/summary"],
+    queryFn: getQueryFn({ on401: "throw" }),
+  });
+
+  const photoMutation = useMutation({
+    mutationFn: async (uri: string) => {
+      const formData = new FormData();
+      formData.append("photo", {
+        uri,
+        name: "profile.jpg",
+        type: "image/jpeg",
+      } as any);
+      const baseUrl = getApiUrl();
+      const res = await fetch(`${baseUrl}/api/profile/photo`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to upload photo");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+    },
+    onError: (err: Error) => {
+      Alert.alert("Error", err.message);
+    },
+  });
+
+  const handlePickPhoto = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      photoMutation.mutate(result.assets[0].uri);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "Camera access is required to take a photo.");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      photoMutation.mutate(result.assets[0].uri);
+    }
+  };
+
+  const handlePhotoPress = () => {
+    Alert.alert("Profile Photo", "Choose an option", [
+      { text: "Take Photo", onPress: handleTakePhoto },
+      { text: "Choose from Library", onPress: handlePickPhoto },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
+  const initials = profile
+    ? `${profile.firstName?.[0] ?? ""}${profile.lastName?.[0] ?? ""}`
+    : "?";
+
+  const bloodType = healthData?.healthMetrics?.find((m: any) => m.type === "blood_type");
+  const weight = healthData?.healthMetrics?.find((m: any) => m.type === "weight");
+  const height = healthData?.healthMetrics?.find((m: any) => m.type === "height");
+  const ec = healthData?.emergencyContacts?.[0];
+  const ins = healthData?.insurance?.[0];
 
   return (
     <ScrollView
@@ -71,125 +159,185 @@ export default function ProfileScreen() {
         paddingBottom: insets.bottom + Spacing.xl,
         paddingHorizontal: Spacing.lg,
       }}
-      scrollIndicatorInsets={{ bottom: insets.bottom }}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.headerRow}>
         <Pressable
-          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
+          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             openDrawer();
           }}
         >
-          <Feather name="sidebar" size={20} color={theme.text} />
+          <Feather name="menu" size={22} color={theme.text} />
         </Pressable>
         <Pressable
-          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
-          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+          style={[styles.menuButton, { backgroundColor: theme.backgroundDefault }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            toggle();
+          }}
         >
-          <Feather name="sun" size={20} color={theme.text} />
+          <Feather name={isDark ? "moon" : "sun"} size={20} color={theme.text} />
         </Pressable>
       </View>
 
-      <ThemedText type="h2" style={styles.title}>
-        My Profile
-      </ThemedText>
-      <ThemedText style={[styles.subtitle, { color: theme.textSecondary }]}>
-        Manage your personal health information and account settings.
-      </ThemedText>
-
-      <View style={[styles.section, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
-        <View style={styles.sectionHeader}>
-          <View>
-            <ThemedText type="h4" style={styles.sectionTitle}>
-              Personal Information
-            </ThemedText>
-            <ThemedText style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
-              Your basic health profile
-            </ThemedText>
+      {/* Profile Header */}
+      <View style={styles.profileHeader}>
+        <Pressable onPress={handlePhotoPress} style={styles.avatarWrapper}>
+          {(profile as any)?.profilePhotoUrl ? (
+            <Image
+              source={{ uri: `${getApiUrl()}${(profile as any).profilePhotoUrl}` }}
+              style={styles.avatarImage}
+            />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: theme.link + "20" }]}>
+              <ThemedText style={[styles.avatarText, { color: theme.link }]}>
+                {initials}
+              </ThemedText>
+            </View>
+          )}
+          <View style={[styles.cameraIcon, { backgroundColor: theme.link }]}>
+            <Feather name="camera" size={12} color="#FFFFFF" />
           </View>
-          <Pressable
-            style={[styles.editButton, { borderColor: theme.border }]}
-            onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-          >
-            <Feather name="edit-2" size={14} color={theme.textSecondary} />
-            <ThemedText style={[styles.editButtonText, { color: theme.textSecondary }]}>
-              Edit
-            </ThemedText>
-          </Pressable>
-        </View>
-
-        <View style={styles.profileRow}>
-          <View style={[styles.avatar, { backgroundColor: theme.backgroundTertiary }]}>
-            <ThemedText style={[styles.avatarText, { color: theme.text }]}>JD</ThemedText>
-          </View>
-          <View style={styles.profileInfo}>
-            <ThemedText style={styles.profileName}>John Doe</ThemedText>
-            <ThemedText style={[styles.profileEmail, { color: theme.textSecondary }]}>
-              john.doe@example.com
-            </ThemedText>
-          </View>
-        </View>
-
-        <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-        <ProfileField label="Full Name" value="John Doe" />
-        <ProfileField label="Email" value="john.doe@example.com" />
-        <ProfileField label="Date of Birth" value="06/15/1985" />
-        <ProfileField label="Blood Type" value="O+" />
-        <ProfileField label="Height" value="5'10&quot;" />
-        <ProfileField label="Weight" value="165 lbs" />
-
-        <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-        <ThemedText style={styles.subsectionTitle}>Emergency Contact</ThemedText>
-        <ProfileField label="Contact Information" value="Jane Doe - (555) 123-4567" />
-        <ProfileField label="Relationship" value="Spouse" />
-
-        <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-        <ThemedText style={styles.subsectionTitle}>Demographics</ThemedText>
-        <ProfileField label="Ethnicity" value="Not Hispanic or Latino" />
-        <ProfileField label="Race" value="White" />
-        <ProfileField label="Marital Status" value="Married" />
-        <ProfileField label="Number of Children" value="2" />
-        <ProfileField label="Occupation" value="Software Engineer" />
-
-        <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-        <ThemedText style={styles.subsectionTitle}>Medical Information</ThemedText>
-        <ProfileField label="Allergies" value="Penicillin, Peanuts" multiline />
-        <ProfileField label="Chronic Conditions" value="None" multiline />
+        </Pressable>
+        <ThemedText type="h3" style={{ marginTop: Spacing.md }}>
+          {profile?.firstName} {profile?.lastName}
+        </ThemedText>
+        <ThemedText style={[styles.emailText, { color: theme.textSecondary }]}>
+          {user?.email}
+        </ThemedText>
       </View>
 
+      {/* Quick Actions */}
+      <View style={styles.quickActions}>
+        <Pressable
+          style={[styles.quickAction, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
+          onPress={() => navigation.navigate("HealthIntake")}
+        >
+          <Feather name="clipboard" size={20} color={theme.link} />
+          <ThemedText style={[styles.quickActionText, { color: theme.text }]}>
+            Health Profile
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          style={[styles.quickAction, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
+          onPress={() => navigation.navigate("Reports")}
+        >
+          <Feather name="folder" size={20} color={theme.link} />
+          <ThemedText style={[styles.quickActionText, { color: theme.text }]}>
+            Records
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          style={[styles.quickAction, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
+          onPress={() => navigation.navigate("Settings" as never)}
+        >
+          <Feather name="settings" size={20} color={theme.link} />
+          <ThemedText style={[styles.quickActionText, { color: theme.text }]}>
+            Settings
+          </ThemedText>
+        </Pressable>
+      </View>
+
+      {/* Personal Information */}
       <View style={[styles.section, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
         <ThemedText type="h4" style={styles.sectionTitle}>
-          Privacy Settings
+          Personal Information
         </ThemedText>
-        <ThemedText style={[styles.sectionSubtitle, { color: theme.textSecondary, marginBottom: Spacing.lg }]}>
-          Control what you share with family members
-        </ThemedText>
+        <ProfileField label="Full Name" value={`${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`} theme={theme} />
+        <ProfileField label="Email" value={user?.email ?? ""} theme={theme} />
+        <ProfileField label="Date of Birth" value={formatDOB(profile?.dateOfBirth ?? null)} theme={theme} />
+        <ProfileField label="Biological Sex" value={profile?.biologicalSex ?? "—"} theme={theme} />
+        <ProfileField label="Blood Type" value={bloodType ? bloodType.unit : "—"} theme={theme} />
+      </View>
 
-        <PrivacySetting
-          title="Share Medications"
-          description="Allow family to view your current medications"
-          enabled={true}
-        />
-        <PrivacySetting
-          title="Share Medical History"
-          description="Allow family to view your past procedures"
-          enabled={true}
-        />
+      {/* Vitals */}
+      {(weight || height) && (
+        <View style={[styles.section, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
+          <ThemedText type="h4" style={styles.sectionTitle}>
+            Vitals
+          </ThemedText>
+          {height && <ProfileField label="Height" value={`${height.value} ${height.unit}`} theme={theme} />}
+          {weight && <ProfileField label="Weight" value={`${weight.value} ${weight.unit}`} theme={theme} />}
+        </View>
+      )}
+
+      {/* Emergency Contact */}
+      {ec && (
+        <View style={[styles.section, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
+          <ThemedText type="h4" style={styles.sectionTitle}>
+            Emergency Contact
+          </ThemedText>
+          <ProfileField label="Name" value={ec.name} theme={theme} />
+          {ec.relationship && <ProfileField label="Relationship" value={ec.relationship} theme={theme} />}
+          {ec.phone && <ProfileField label="Phone" value={ec.phone} theme={theme} />}
+          {ec.email && <ProfileField label="Email" value={ec.email} theme={theme} />}
+        </View>
+      )}
+
+      {/* Insurance */}
+      {ins && (
+        <View style={[styles.section, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
+          <ThemedText type="h4" style={styles.sectionTitle}>
+            Insurance
+          </ThemedText>
+          <ProfileField label="Provider" value={ins.provider} theme={theme} />
+          {ins.policyNumber && <ProfileField label="Policy #" value={ins.policyNumber} theme={theme} />}
+          {ins.planType && <ProfileField label="Plan Type" value={ins.planType} theme={theme} />}
+        </View>
+      )}
+
+      {/* Health Summary */}
+      <View style={[styles.section, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
+        <ThemedText type="h4" style={styles.sectionTitle}>
+          Health Overview
+        </ThemedText>
+        {healthLoading ? (
+          <ActivityIndicator size="small" color={theme.link} />
+        ) : (
+          <View style={styles.statsRow}>
+            <View style={styles.stat}>
+              <ThemedText style={[styles.statNumber, { color: theme.link }]}>
+                {healthData?.conditions?.length ?? 0}
+              </ThemedText>
+              <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
+                Conditions
+              </ThemedText>
+            </View>
+            <View style={styles.stat}>
+              <ThemedText style={[styles.statNumber, { color: theme.link }]}>
+                {healthData?.medications?.length ?? 0}
+              </ThemedText>
+              <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
+                Medications
+              </ThemedText>
+            </View>
+            <View style={styles.stat}>
+              <ThemedText style={[styles.statNumber, { color: theme.link }]}>
+                {healthData?.allergies?.length ?? 0}
+              </ThemedText>
+              <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
+                Allergies
+              </ThemedText>
+            </View>
+            <View style={styles.stat}>
+              <ThemedText style={[styles.statNumber, { color: theme.link }]}>
+                {healthData?.surgeries?.length ?? 0}
+              </ThemedText>
+              <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
+                Surgeries
+              </ThemedText>
+            </View>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -197,134 +345,77 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   menuButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    borderWidth: 1,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
-  title: {
-    marginBottom: Spacing.xs,
-  },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
+  profileHeader: {
+    alignItems: "center",
     marginBottom: Spacing.xl,
   },
-  section: {
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: Spacing.lg,
-  },
-  sectionTitle: {
-    marginBottom: 2,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-  },
-  editButton: {
-    flexDirection: "row",
+  avatarWrapper: { position: "relative" },
+  avatar: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     alignItems: "center",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    justifyContent: "center",
+  },
+  avatarImage: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+  },
+  avatarText: { fontSize: 28, fontWeight: "700" },
+  cameraIcon: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  emailText: { fontSize: 14, marginTop: Spacing.xs },
+  quickActions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  quickAction: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.sm,
     borderWidth: 1,
     gap: Spacing.xs,
   },
-  editButtonText: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  profileRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing.lg,
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: {
-    fontSize: 22,
-    fontWeight: "600",
-  },
-  profileInfo: {
-    marginLeft: Spacing.lg,
-  },
-  profileName: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  profileEmail: {
-    fontSize: 14,
-  },
-  divider: {
-    height: 1,
-    marginVertical: Spacing.lg,
-  },
-  subsectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: Spacing.md,
-  },
-  fieldContainer: {
-    marginBottom: Spacing.md,
-  },
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: "500",
-    marginBottom: Spacing.xs,
-  },
-  fieldInput: {
+  quickActionText: { fontSize: 12, fontWeight: "500" },
+  section: {
+    borderRadius: BorderRadius.sm,
     borderWidth: 1,
-    borderRadius: BorderRadius.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
   },
-  fieldInputMultiline: {
-    minHeight: 80,
-  },
-  fieldValue: {
-    fontSize: 15,
-  },
-  privacyItem: {
+  sectionTitle: { marginBottom: Spacing.md },
+  fieldContainer: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
+    alignItems: "center",
+    paddingVertical: Spacing.sm,
   },
-  privacyContent: {
-    flex: 1,
-    marginRight: Spacing.md,
+  fieldLabel: { fontSize: 14 },
+  fieldValue: { fontSize: 14, fontWeight: "500" },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
   },
-  privacyTitle: {
-    fontSize: 15,
-    fontWeight: "500",
-    marginBottom: 2,
-  },
-  privacyDescription: {
-    fontSize: 13,
-  },
-  privacyBadge: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
-  },
-  privacyBadgeText: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
+  stat: { alignItems: "center" },
+  statNumber: { fontSize: 24, fontWeight: "700" },
+  statLabel: { fontSize: 11, marginTop: 2 },
 });
