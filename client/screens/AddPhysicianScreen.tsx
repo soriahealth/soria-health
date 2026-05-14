@@ -17,6 +17,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { ThemedText } from "@/components/ThemedText";
 import { FormField } from "@/components/FormField";
 import Button from "@/components/Button";
+import { KeyboardSafeView } from "@/components/KeyboardSafeView";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { apiRequest, queryClient } from "@/lib/query-client";
@@ -109,6 +110,7 @@ export default function AddPhysicianScreen() {
   };
 
   return (
+    <KeyboardSafeView>
     <View
       style={[
         styles.container,
@@ -245,6 +247,7 @@ export default function AddPhysicianScreen() {
         </Button>
       </ScrollView>
     </View>
+    </KeyboardSafeView>
   );
 }
 

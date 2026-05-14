@@ -7,6 +7,7 @@ import { Pressable } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
 import Button from "@/components/Button";
+import { KeyboardSafeView } from "@/components/KeyboardSafeView";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { apiRequest } from "@/lib/query-client";
@@ -45,6 +46,7 @@ export default function ChangePasswordScreen() {
   };
 
   return (
+    <KeyboardSafeView>
     <View
       style={[
         styles.container,
@@ -110,6 +112,7 @@ export default function ChangePasswordScreen() {
         </View>
       </View>
     </View>
+    </KeyboardSafeView>
   );
 }
 

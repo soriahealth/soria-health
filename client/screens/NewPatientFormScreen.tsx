@@ -6,6 +6,7 @@ import * as Haptics from "expo-haptics";
 import Checkbox from "expo-checkbox";
 
 import { ThemedText } from "@/components/ThemedText";
+import { KeyboardSafeView } from "@/components/KeyboardSafeView";
 import { useTheme } from "@/hooks/useTheme";
 import { useDrawer } from "@/context/DrawerContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -96,6 +97,7 @@ export default function NewPatientFormScreen() {
   };
 
   return (
+    <KeyboardSafeView>
     <ScrollView
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
       contentContainerStyle={{
@@ -341,6 +343,7 @@ export default function NewPatientFormScreen() {
         </Pressable>
       </View>
     </ScrollView>
+    </KeyboardSafeView>
   );
 }
 

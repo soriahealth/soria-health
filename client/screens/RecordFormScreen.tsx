@@ -9,6 +9,7 @@ import { FormField } from "@/components/FormField";
 import { ClinicalTypeahead } from "@/components/ClinicalTypeahead";
 import { ThemedText } from "@/components/ThemedText";
 import Button from "@/components/Button";
+import { KeyboardSafeView } from "@/components/KeyboardSafeView";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { apiRequest, queryClient } from "@/lib/query-client";
@@ -305,6 +306,7 @@ export default function RecordFormScreen() {
   };
 
   return (
+    <KeyboardSafeView>
     <View
       style={[
         styles.container,
@@ -365,6 +367,7 @@ export default function RecordFormScreen() {
         </Button>
       </ScrollView>
     </View>
+    </KeyboardSafeView>
   );
 }
 

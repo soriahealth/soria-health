@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { ThemedText } from "@/components/ThemedText";
 import Button from "@/components/Button";
+import { KeyboardSafeView } from "@/components/KeyboardSafeView";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/context/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -97,6 +98,7 @@ export default function EmailVerificationScreen() {
   };
 
   return (
+    <KeyboardSafeView>
     <View
       style={[
         styles.container,
@@ -213,6 +215,7 @@ export default function EmailVerificationScreen() {
         </Pressable>
       </View>
     </View>
+    </KeyboardSafeView>
   );
 }
 

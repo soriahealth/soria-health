@@ -10,6 +10,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { FormField } from "@/components/FormField";
 import Button from "@/components/Button";
 import SSOButtons from "@/components/SSOButtons";
+import { KeyboardSafeView } from "@/components/KeyboardSafeView";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/context/AuthContext";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -61,6 +62,7 @@ export default function SignUpScreen() {
   };
 
   return (
+    <KeyboardSafeView>
     <View
       style={[
         styles.container,
@@ -152,6 +154,7 @@ export default function SignUpScreen() {
         <SSOButtons onSuccess={() => {}} />
       </ScrollView>
     </View>
+    </KeyboardSafeView>
   );
 }
 

@@ -8,6 +8,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { ThemedText } from "@/components/ThemedText";
 import { FormField } from "@/components/FormField";
 import Button from "@/components/Button";
+import { KeyboardSafeView } from "@/components/KeyboardSafeView";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/query-client";
@@ -93,6 +94,7 @@ export default function EditManagedProfileScreen() {
   const canSave = firstName.trim() && lastName.trim();
 
   return (
+    <KeyboardSafeView>
     <View
       style={[
         styles.container,
@@ -213,6 +215,7 @@ export default function EditManagedProfileScreen() {
         </Button>
       </ScrollView>
     </View>
+    </KeyboardSafeView>
   );
 }
 

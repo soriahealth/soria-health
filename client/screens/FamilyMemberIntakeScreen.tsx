@@ -9,6 +9,7 @@ import { useMutation } from "@tanstack/react-query";
 import { ThemedText } from "@/components/ThemedText";
 import Button from "@/components/Button";
 import { FormField } from "@/components/FormField";
+import { KeyboardSafeView } from "@/components/KeyboardSafeView";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { apiRequest, queryClient } from "@/lib/query-client";
@@ -441,6 +442,7 @@ export default function FamilyMemberIntakeScreen() {
     : `Building ${firstName}'s Health Profile`;
 
   return (
+    <KeyboardSafeView>
     <View
       style={[
         styles.container,
@@ -503,6 +505,7 @@ export default function FamilyMemberIntakeScreen() {
         )}
       </View>
     </View>
+    </KeyboardSafeView>
   );
 }
 
