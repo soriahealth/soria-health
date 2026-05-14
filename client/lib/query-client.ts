@@ -18,9 +18,9 @@ export function getAuthToken(): string | null {
 export function getApiUrl(): string {
   let host = process.env.EXPO_PUBLIC_DOMAIN;
 
-  // Fallback: Cloudflare tunnel for mobile testing
+  // Production: Railway-hosted backend
   if (!host) {
-    host = "cash-disable-walnut-mostly.trycloudflare.com";
+    host = "soria-health-production.up.railway.app";
   }
 
   const isLocal = host.startsWith("localhost") || host.startsWith("127.0.0.1") || host.startsWith("192.168.") || host.startsWith("10.") || host.startsWith("172.");
