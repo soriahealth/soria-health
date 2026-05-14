@@ -103,6 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: email,
         email,
         password: hashedPassword,
+        emailVerified: true,
       });
 
       const profile = await storage.createProfile({
@@ -114,6 +115,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       req.session.userId = user.id;
+
+      // Generate auth token for mobile clients
+      const authToken = crypto.randomUUID();
+      await db.update(users).set({ authToken }).where(eq(users.id, user.id));
 
       // Generate 6-digit email verification code
       const code = String(Math.floor(100000 + Math.random() * 900000));
@@ -137,6 +142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(201).json({
         user: { id: user.id, email: user.email, emailVerified: false },
         profile,
+        token: authToken,
       });
     } catch (err) {
       console.error("Signup error:", err);
@@ -165,11 +171,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       req.session.userId = user.id;
 
+      // Generate auth token for mobile clients
+      const authToken = crypto.randomUUID();
+      await db.update(users).set({ authToken }).where(eq(users.id, user.id));
+
       const profile = await storage.getProfileByUserId(user.id);
 
       return res.json({
-        user: { id: user.id, email: user.email },
+        user: { id: user.id, email: user.email, emailVerified: user.emailVerified },
         profile,
+        token: authToken,
       });
     } catch (err) {
       console.error("Login error:", err);
@@ -187,11 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.get("/api/auth/me", async (req, res) => {
-    if (!req.session?.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
+  app.get("/api/auth/me", authMiddleware, async (req, res) => {
     try {
       const user = await storage.getUser(req.session.userId);
       if (!user) {

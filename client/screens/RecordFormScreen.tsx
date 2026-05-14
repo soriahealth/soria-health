@@ -6,6 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation } from "@tanstack/react-query";
 
 import { FormField } from "@/components/FormField";
+import { ClinicalTypeahead } from "@/components/ClinicalTypeahead";
 import { ThemedText } from "@/components/ThemedText";
 import Button from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
@@ -99,6 +100,17 @@ export default function RecordFormScreen() {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
+  const updateDate = (key: string, raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    let formatted = digits;
+    if (digits.length > 4) {
+      formatted = digits.slice(0, 2) + "-" + digits.slice(2, 4) + "-" + digits.slice(4);
+    } else if (digits.length > 2) {
+      formatted = digits.slice(0, 2) + "-" + digits.slice(2);
+    }
+    update(key, formatted);
+  };
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const privacyField = supportsPrivacy ? { isPrivate } : {};
@@ -150,18 +162,18 @@ export default function RecordFormScreen() {
       case "conditions":
         return (
           <>
-            <FormField label="Condition Name" value={formData.name ?? ""} onChangeText={(v) => update("name", v)} placeholder="e.g. Hypertension" />
-            <FormField label="Diagnosis Date" value={formData.diagnosisDate ?? ""} onChangeText={(v) => update("diagnosisDate", v)} placeholder="DD-MM-YYYY" keyboardType="numbers-and-punctuation" />
+            <ClinicalTypeahead label="Condition Name" value={formData.name ?? ""} onChangeText={(v) => update("name", v)} placeholder="Search conditions..." apiEndpoint="https://clinicaltables.nlm.nih.gov/api/conditions/v3/search" />
+            <FormField label="Diagnosis Date" value={formData.diagnosisDate ?? ""} onChangeText={(v) => updateDate("diagnosisDate", v)} placeholder="DD-MM-YYYY" keyboardType="number-pad" maxLength={10} />
             <FormField label="Status" value={formData.status ?? ""} onChangeText={(v) => update("status", v)} placeholder="e.g. Active, Managed" />
           </>
         );
       case "medications":
         return (
           <>
-            <FormField label="Medication Name" value={formData.name ?? ""} onChangeText={(v) => update("name", v)} placeholder="e.g. Lisinopril" />
+            <ClinicalTypeahead label="Medication Name" value={formData.name ?? ""} onChangeText={(v) => update("name", v)} placeholder="Search medications..." apiEndpoint="https://clinicaltables.nlm.nih.gov/api/rxterms/v3/search" />
             <FormField label="Dosage" value={formData.dosage ?? ""} onChangeText={(v) => update("dosage", v)} placeholder="e.g. 10mg" />
             <FormField label="Frequency" value={formData.frequency ?? ""} onChangeText={(v) => update("frequency", v)} placeholder="e.g. Once daily" />
-            <FormField label="Last Filled Date" value={formData.lastFilledDate ?? ""} onChangeText={(v) => update("lastFilledDate", v)} placeholder="DD-MM-YYYY" keyboardType="numbers-and-punctuation" />
+            <FormField label="Last Filled Date" value={formData.lastFilledDate ?? ""} onChangeText={(v) => updateDate("lastFilledDate", v)} placeholder="DD-MM-YYYY" keyboardType="number-pad" maxLength={10} />
             <FormField label="Day Supply" value={formData.daySupply ?? ""} onChangeText={(v) => update("daySupply", v)} placeholder="e.g. 30, 90" keyboardType="numeric" />
             <FormField label="Refills Remaining" value={formData.refillsRemaining ?? ""} onChangeText={(v) => update("refillsRemaining", v)} placeholder="e.g. 3" keyboardType="numeric" />
             {pharmacies.length > 0 && (
@@ -257,7 +269,7 @@ export default function RecordFormScreen() {
       case "allergies":
         return (
           <>
-            <FormField label="Allergen" value={formData.allergen ?? ""} onChangeText={(v) => update("allergen", v)} placeholder="e.g. Penicillin" />
+            <ClinicalTypeahead label="Allergen" value={formData.allergen ?? ""} onChangeText={(v) => update("allergen", v)} placeholder="Search allergens..." apiEndpoint="https://clinicaltables.nlm.nih.gov/api/rxterms/v3/search" />
             <FormField label="Reaction Type" value={formData.reactionType ?? ""} onChangeText={(v) => update("reactionType", v)} placeholder="e.g. Hives" />
             <FormField label="Severity" value={formData.severity ?? ""} onChangeText={(v) => update("severity", v)} placeholder="e.g. Mild, Moderate, Severe" />
           </>
@@ -265,8 +277,8 @@ export default function RecordFormScreen() {
       case "surgeries":
         return (
           <>
-            <FormField label="Procedure" value={formData.procedure ?? ""} onChangeText={(v) => update("procedure", v)} placeholder="e.g. Appendectomy" />
-            <FormField label="Date" value={formData.date ?? ""} onChangeText={(v) => update("date", v)} placeholder="DD-MM-YYYY" keyboardType="numbers-and-punctuation" />
+            <ClinicalTypeahead label="Procedure" value={formData.procedure ?? ""} onChangeText={(v) => update("procedure", v)} placeholder="Search procedures..." apiEndpoint="https://clinicaltables.nlm.nih.gov/api/procedures/v3/search" />
+            <FormField label="Date" value={formData.date ?? ""} onChangeText={(v) => updateDate("date", v)} placeholder="DD-MM-YYYY" keyboardType="number-pad" maxLength={10} />
             <FormField label="Hospital" value={formData.hospital ?? ""} onChangeText={(v) => update("hospital", v)} placeholder="e.g. Memorial Hospital" />
           </>
         );

@@ -260,8 +260,12 @@ export default function FamilyNetworkScreen() {
                     },
                   ]}
                   onPress={() => {
-                    if (member.isManaged && !member.onboardingCompleted) {
-                      handleBuildProfile(member.profileId, member.name.split(" ")[0]);
+                    if (member.isManaged) {
+                      if (member.onboardingCompleted) {
+                        navigation.navigate("ManagedProfileRecords", { profileId: member.profileId, firstName: member.name.split(" ")[0] });
+                      } else {
+                        handleBuildProfile(member.profileId, member.name.split(" ")[0]);
+                      }
                     }
                   }}
                 >

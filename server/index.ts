@@ -47,14 +47,17 @@ function setupCors(app: express.Application) {
       origin?.startsWith("http://10.") ||
       origin?.startsWith("http://172.");
     const isNgrok = origin?.includes(".ngrok");
+    const isExpoTunnel = origin?.includes(".exp.direct");
+    const isLocaltunnel = origin?.includes(".loca.lt");
+    const isCloudflare = origin?.includes(".trycloudflare.com");
 
-    if (origin && (origins.has(origin) || isLocalhost || isLan || isNgrok)) {
+    if (origin && (origins.has(origin) || isLocalhost || isLan || isNgrok || isExpoTunnel || isLocaltunnel || isCloudflare)) {
       res.header("Access-Control-Allow-Origin", origin);
       res.header(
         "Access-Control-Allow-Methods",
         "GET, POST, PUT, DELETE, OPTIONS",
       );
-      res.header("Access-Control-Allow-Headers", "Content-Type, ngrok-skip-browser-warning");
+      res.header("Access-Control-Allow-Headers", "Content-Type, ngrok-skip-browser-warning, Bypass-Tunnel-Reminder");
       res.header("Access-Control-Allow-Credentials", "true");
     }
 
@@ -90,8 +93,8 @@ function setupSessions(app: express.Application) {
       cookie: {
         maxAge: 15 * 60 * 1000, // 15 minutes
         httpOnly: true,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "lax" : "none",
+        secure: process.env.NODE_ENV === "production" || !!process.env.EXPO_PUBLIC_DOMAIN,
       },
     }),
   );
@@ -259,6 +262,11 @@ function setupErrorHandler(app: express.Application) {
 }
 
 (async () => {
+  // Trust the first proxy hop (Railway, Render, Fly, etc. terminate TLS at a proxy)
+  if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+  }
+
   setupCors(app);
   setupBodyParsing(app);
   setupSessions(app);

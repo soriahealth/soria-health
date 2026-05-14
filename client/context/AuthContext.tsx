@@ -1,7 +1,10 @@
-import React, { createContext, useContext, useCallback } from "react";
+import React, { createContext, useContext, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { apiRequest, getQueryFn } from "@/lib/query-client";
+import { apiRequest, getQueryFn, setAuthToken } from "@/lib/query-client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Profile } from "@shared/schema";
+
+const AUTH_TOKEN_KEY = "@soria_auth_token";
 
 interface AuthUser {
   id: string;
@@ -57,8 +60,28 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
+async function saveToken(token: string) {
+  setAuthToken(token);
+  await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+async function clearToken() {
+  setAuthToken(null);
+  await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
+
+  // Load saved token on mount
+  useEffect(() => {
+    AsyncStorage.getItem(AUTH_TOKEN_KEY).then((token) => {
+      if (token) {
+        setAuthToken(token);
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      }
+    });
+  }, []);
 
   const {
     data: authData,
@@ -77,7 +100,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      await apiRequest("POST", "/api/auth/login", { email, password });
+      const res = await apiRequest("POST", "/api/auth/login", { email, password });
+      const data = await res.json();
+      if (data.token) {
+        await saveToken(data.token);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -92,7 +119,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password: string;
       confirmPassword: string;
     }) => {
-      await apiRequest("POST", "/api/auth/signup", data);
+      const res = await apiRequest("POST", "/api/auth/signup", data);
+      const responseData = await res.json();
+      if (responseData.token) {
+        await saveToken(responseData.token);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -102,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logoutMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("POST", "/api/auth/logout");
+      await clearToken();
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/auth/me"], null);

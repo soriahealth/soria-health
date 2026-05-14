@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Alert } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useMutation } from "@tanstack/react-query";
@@ -27,9 +27,6 @@ const TOTAL_STEPS = 10;
 const SEX_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
 
 const INITIAL_VITALS: VitalEntry[] = [
-  { type: "systolic_bp", value: "", unit: "mmHg" },
-  { type: "diastolic_bp", value: "", unit: "mmHg" },
-  { type: "heart_rate", value: "", unit: "bpm" },
   { type: "weight", value: "", unit: "lbs" },
   { type: "height", value: "", unit: "in" },
   { type: "blood_type", value: "", unit: "type" },
@@ -353,13 +350,19 @@ export default function ProfileSetupScreen() {
         </View>
       ) : null}
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
       >
-        {renderStep()}
-      </ScrollView>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {renderStep()}
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <View style={styles.bottomBar}>
         {!isReviewStep ? (
@@ -421,7 +424,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Spacing["2xl"],
-    paddingBottom: Spacing.xl,
+    paddingBottom: 120,
   },
   heading: {
     marginBottom: Spacing.xs,

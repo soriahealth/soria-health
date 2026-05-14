@@ -264,12 +264,6 @@ export function SidebarModal() {
                 onPress={() => navigate("BasicInformation")}
               />
               <DrawerItem
-                icon="credit-card"
-                label="Subscription"
-                isActive={currentScreen === "Subscription"}
-                onPress={() => navigate("Subscription")}
-              />
-              <DrawerItem
                 icon="settings"
                 label="Settings"
                 isActive={currentScreen === "Settings"}

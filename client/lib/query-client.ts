@@ -1,5 +1,16 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// In-memory auth token (set after login/signup, loaded from AsyncStorage on boot)
+let authToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  authToken = token;
+}
+
+export function getAuthToken(): string | null {
+  return authToken;
+}
+
 /**
  * Gets the base URL for the Express API server (e.g., "http://localhost:3000")
  * @returns {string} The API base URL
@@ -7,9 +18,9 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 export function getApiUrl(): string {
   let host = process.env.EXPO_PUBLIC_DOMAIN;
 
-  // Fallback: ngrok tunnel for mobile testing
+  // Fallback: Cloudflare tunnel for mobile testing
   if (!host) {
-    host = "glummest-isreal-unready.ngrok-free.dev";
+    host = "cash-disable-walnut-mostly.trycloudflare.com";
   }
 
   const isLocal = host.startsWith("localhost") || host.startsWith("127.0.0.1") || host.startsWith("192.168.") || host.startsWith("10.") || host.startsWith("172.");
@@ -17,6 +28,14 @@ export function getApiUrl(): string {
   let url = new URL(`${protocol}://${host}`);
 
   return url.href;
+}
+
+function getAuthHeaders(extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...extra };
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+  return headers;
 }
 
 async function throwIfResNotOk(res: Response) {
@@ -36,10 +55,9 @@ export async function apiRequest(
 
   const res = await fetch(url, {
     method,
-    headers: {
-      ...(data ? { "Content-Type": "application/json" } : {}),
-      "ngrok-skip-browser-warning": "true",
-    },
+    headers: getAuthHeaders(
+      data ? { "Content-Type": "application/json" } : undefined,
+    ),
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -59,9 +77,7 @@ export const getQueryFn: <T>(options: {
 
     const res = await fetch(url, {
       credentials: "include",
-      headers: {
-        "ngrok-skip-browser-warning": "true",
-      },
+      headers: getAuthHeaders(),
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

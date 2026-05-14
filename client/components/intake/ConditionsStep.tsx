@@ -38,6 +38,18 @@ export function ConditionsStep({ entries, onChange }: ConditionsStepProps) {
     onChange(updated);
   };
 
+  const handleDiagnosisDateChange = (index: number, raw: string) => {
+    // Strip non-digits
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    let formatted = digits;
+    if (digits.length > 4) {
+      formatted = digits.slice(0, 2) + "-" + digits.slice(2, 4) + "-" + digits.slice(4);
+    } else if (digits.length > 2) {
+      formatted = digits.slice(0, 2) + "-" + digits.slice(2);
+    }
+    updateEntry(index, "diagnosisDate", formatted);
+  };
+
   return (
     <View>
       <ThemedText type="h4" style={styles.heading}>
@@ -71,9 +83,10 @@ export function ConditionsStep({ entries, onChange }: ConditionsStepProps) {
           <FormField
             label="Diagnosis Date"
             value={entry.diagnosisDate}
-            onChangeText={(v) => updateEntry(index, "diagnosisDate", v)}
+            onChangeText={(v) => handleDiagnosisDateChange(index, v)}
             placeholder="DD-MM-YYYY"
-            keyboardType="numbers-and-punctuation"
+            keyboardType="number-pad"
+            maxLength={10}
           />
 
           <View style={styles.statusSection}>

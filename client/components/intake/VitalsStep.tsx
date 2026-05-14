@@ -29,6 +29,19 @@ export function VitalsStep({ entries, onChange }: VitalsStepProps) {
   const getValue = (type: string) => entries.find((e) => e.type === type)?.value ?? "";
   const bloodType = getValue("blood_type");
 
+  // Parse height stored as total inches into feet and inches
+  const heightVal = getValue("height");
+  const totalInches = heightVal ? parseInt(heightVal, 10) : 0;
+  const feet = totalInches ? String(Math.floor(totalInches / 12)) : "";
+  const inches = totalInches ? String(totalInches % 12) : "";
+
+  const handleHeightChange = (newFeet: string, newInches: string) => {
+    const f = parseInt(newFeet, 10) || 0;
+    const i = parseInt(newInches, 10) || 0;
+    const total = f * 12 + i;
+    onChange(updateEntry(entries, "height", total > 0 ? String(total) : ""));
+  };
+
   return (
     <View>
       <ThemedText type="h4" style={styles.heading}>
@@ -38,51 +51,31 @@ export function VitalsStep({ entries, onChange }: VitalsStepProps) {
         Enter your current vital measurements.
       </ThemedText>
 
-      <View style={styles.row}>
-        <View style={styles.halfField}>
-          <FormField
-            label="Systolic BP"
-            value={getValue("systolic_bp")}
-            onChangeText={(v) => onChange(updateEntry(entries, "systolic_bp", v))}
-            placeholder="120"
-            keyboardType="numeric"
-          />
-        </View>
-        <View style={styles.halfField}>
-          <FormField
-            label="Diastolic BP"
-            value={getValue("diastolic_bp")}
-            onChangeText={(v) => onChange(updateEntry(entries, "diastolic_bp", v))}
-            placeholder="80"
-            keyboardType="numeric"
-          />
-        </View>
-      </View>
-
       <FormField
-        label="Heart Rate (bpm)"
-        value={getValue("heart_rate")}
-        onChangeText={(v) => onChange(updateEntry(entries, "heart_rate", v))}
-        placeholder="72"
+        label="Weight (lbs)"
+        value={getValue("weight")}
+        onChangeText={(v) => onChange(updateEntry(entries, "weight", v))}
+        placeholder="165"
         keyboardType="numeric"
       />
 
+      <ThemedText style={[styles.fieldLabel, { color: theme.text }]}>Height</ThemedText>
       <View style={styles.row}>
         <View style={styles.halfField}>
           <FormField
-            label="Weight (lbs)"
-            value={getValue("weight")}
-            onChangeText={(v) => onChange(updateEntry(entries, "weight", v))}
-            placeholder="165"
+            label="Feet"
+            value={feet}
+            onChangeText={(v) => handleHeightChange(v, inches)}
+            placeholder="5"
             keyboardType="numeric"
           />
         </View>
         <View style={styles.halfField}>
           <FormField
-            label="Height (in)"
-            value={getValue("height")}
-            onChangeText={(v) => onChange(updateEntry(entries, "height", v))}
-            placeholder="70"
+            label="Inches"
+            value={inches}
+            onChangeText={(v) => handleHeightChange(feet, v)}
+            placeholder="8"
             keyboardType="numeric"
           />
         </View>
@@ -129,6 +122,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginBottom: Spacing.xl,
   },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: Spacing.xs,
+  },
   row: {
     flexDirection: "row",
     gap: Spacing.md,
@@ -138,11 +136,6 @@ const styles = StyleSheet.create({
   },
   bloodTypeSection: {
     marginBottom: Spacing.lg,
-  },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: Spacing.sm,
   },
   bloodTypeGrid: {
     flexDirection: "row",

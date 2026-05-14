@@ -26,6 +26,7 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").notNull().default(false),
   authProvider: text("auth_provider").notNull().default("email"), // "email" | "google" | "apple"
   providerId: text("provider_id"),
+  authToken: text("auth_token"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
