@@ -1,11 +1,13 @@
-// File storage service. Uses Cloudflare R2 in production, local disk in dev.
-// To enable R2, set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET in env.
+// File storage service.
+// - Cloudflare R2 if R2_* env vars are set
+// - Otherwise a local directory. In production set UPLOADS_DIR to a Railway
+//   Volume mount path (e.g. /app/uploads) so uploads survive redeploys.
 
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
-const LOCAL_DIR = path.join(process.cwd(), "uploads");
+const LOCAL_DIR = process.env.UPLOADS_DIR || path.join(process.cwd(), "uploads");
 
 const r2Config = {
   accountId: process.env.R2_ACCOUNT_ID,
