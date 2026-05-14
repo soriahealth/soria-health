@@ -38,6 +38,7 @@ import { registerSSORoutes } from "./sso";
 import { registerRefillRoutes } from "./refills";
 import { registerCallingRoutes } from "./calling";
 import { registerBillingRoutes, premiumMiddleware } from "./billing";
+import { sendVerificationEmail, sendPasswordResetEmail } from "./email";
 import OpenAI from "openai";
 
 /** Convert DD-MM-YYYY (or DDMMYYYY, DD/MM/YYYY) to YYYY-MM-DD for PostgreSQL date columns. */
@@ -129,6 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt,
       });
       console.log(`[DEV] Email verification code for ${email}: ${code}`);
+      sendVerificationEmail(email, code).catch((err) => console.error("verification email failed:", err));
 
       // Create basic subscription for new user
       await storage.createSubscription({
@@ -200,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/auth/me", authMiddleware, async (req, res) => {
     try {
-      const user = await storage.getUser(req.session.userId);
+      const user = await storage.getUser(req.session.userId!);
       if (!user) {
         return res.status(401).json({ message: "User not found" });
       }
@@ -243,6 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // In production, send email with reset link. For dev, log token.
       console.log(`[DEV] Password reset token for ${parsed.data.email}: ${token}`);
+      sendPasswordResetEmail(parsed.data.email, token).catch((err) => console.error("reset email failed:", err));
 
       return res.json({ message: "If that email exists, a reset link has been sent." });
     } catch (err) {
@@ -453,6 +456,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const user = await storage.getUser(userId);
       console.log(`[DEV] Resent verification code for ${user?.email}: ${code}`);
+      if (user?.email) {
+        sendVerificationEmail(user.email, code).catch((err) => console.error("verification email failed:", err));
+      }
 
       return res.json({ message: "Verification code sent" });
     } catch (err) {
@@ -1730,7 +1736,11 @@ If a field is not visible or cannot be determined, use an empty string for that 
       if (!parsed.success) {
         return res.status(400).json({ message: parsed.error.errors[0].message });
       }
-      const alert = await storage.createAlert({ ...parsed.data, profileId });
+      const alert = await storage.createAlert({
+        ...parsed.data,
+        profileId,
+        scheduledFor: parsed.data.scheduledFor ? new Date(parsed.data.scheduledFor) : undefined,
+      });
       return res.status(201).json(alert);
     } catch (err: any) {
       console.error("Create alert error:", err?.message);

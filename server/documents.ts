@@ -1,27 +1,14 @@
 import type { Express } from "express";
 import multer from "multer";
-import path from "path";
-import fs from "fs";
 import OpenAI from "openai";
 import { authMiddleware, verifiedMiddleware } from "./auth";
 import { storage } from "./storage";
+import { uploadFile, getFile, deleteFile, storageBackend } from "./storage-files";
 
-const UPLOADS_DIR = path.join(process.cwd(), "uploads");
-
-// Ensure uploads directory exists
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
+console.log(`[documents] storage backend: ${storageBackend}`);
 
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: UPLOADS_DIR,
-    filename: (_req, file, cb) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const ext = path.extname(file.originalname);
-      cb(null, uniqueSuffix + ext);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
   fileFilter: (_req, file, cb) => {
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
@@ -29,7 +16,7 @@ const upload = multer({
   },
 });
 
-async function analyzeImage(filePath: string, mimeType: string): Promise<{ label: string; description: string; analysis: string }> {
+async function analyzeImage(imageBuffer: Buffer, mimeType: string): Promise<{ label: string; description: string; analysis: string }> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return {
@@ -41,7 +28,6 @@ async function analyzeImage(filePath: string, mimeType: string): Promise<{ label
 
   try {
     const openai = new OpenAI({ apiKey });
-    const imageBuffer = fs.readFileSync(filePath);
     const base64Image = imageBuffer.toString("base64");
     const dataUrl = `data:${mimeType};base64,${base64Image}`;
 
@@ -118,12 +104,15 @@ export function registerDocumentRoutes(app: Express) {
       let aiAnalysis = "";
 
       if (file.mimetype.startsWith("image/")) {
-        const analysis = await analyzeImage(file.path, file.mimetype);
+        const analysis = await analyzeImage(file.buffer, file.mimetype);
         // Only use AI label/description if user didn't provide their own
         if (!req.body.label) label = analysis.label;
         if (!req.body.description) description = analysis.description;
         aiAnalysis = analysis.analysis;
       }
+
+      // Upload to storage backend (R2 in prod, local disk in dev)
+      const stored = await uploadFile(file.buffer, file.originalname, file.mimetype);
 
       const doc = await storage.createDocument({
         profileId,
@@ -134,7 +123,7 @@ export function registerDocumentRoutes(app: Express) {
         aiAnalysis,
         fileType: file.mimetype,
         originalName: file.originalname,
-        storagePath: file.filename,
+        storagePath: stored.key,
       });
 
       return res.status(201).json(doc);
@@ -182,13 +171,13 @@ export function registerDocumentRoutes(app: Express) {
       if (!doc || doc.profileId !== profileId) {
         return res.status(404).json({ message: "Document not found" });
       }
-      const filePath = path.join(UPLOADS_DIR, doc.storagePath);
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ message: "File not found on disk" });
+      const buffer = await getFile(doc.storagePath);
+      if (!buffer) {
+        return res.status(404).json({ message: "File not found in storage" });
       }
       res.setHeader("Content-Type", doc.fileType || "application/octet-stream");
       res.setHeader("Content-Disposition", `inline; filename="${doc.originalName || "document"}"`);
-      return res.sendFile(filePath);
+      return res.send(buffer);
     } catch (err) {
       console.error("Serve document error:", err);
       return res.status(500).json({ message: "Internal server error" });
@@ -226,11 +215,8 @@ export function registerDocumentRoutes(app: Express) {
       if (!doc || doc.profileId !== profileId) {
         return res.status(404).json({ message: "Document not found" });
       }
-      // Delete file from disk
-      const filePath = path.join(UPLOADS_DIR, doc.storagePath);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
+      // Delete file from storage backend
+      await deleteFile(doc.storagePath).catch((err) => console.error("file delete failed:", err));
       await storage.deleteDocument(doc.id);
       return res.json({ message: "Deleted" });
     } catch (err) {

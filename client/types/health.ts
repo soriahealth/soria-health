@@ -28,7 +28,7 @@ export interface Medication {
 export interface FamilyMember {
   id: string;
   name: string;
-  relationship: "mother" | "father" | "sister" | "brother" | "spouse" | "child" | "grandmother" | "grandfather" | "aunt" | "uncle" | "cousin";
+  relationship: "mother" | "father" | "sister" | "brother" | "spouse" | "child" | "son" | "daughter" | "grandmother" | "grandfather" | "aunt" | "uncle" | "cousin";
   age: number;
   gender: "male" | "female" | "other";
   bloodType?: string;

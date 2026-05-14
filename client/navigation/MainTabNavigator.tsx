@@ -30,7 +30,7 @@ export default function MainTabNavigator() {
     <Tab.Navigator
       initialRouteName="Dashboard"
       screenOptions={{
-        ...screenOptions,
+        ...(screenOptions as any),
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.tabIconDefault,
         tabBarStyle: {
